@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вхід для клієнта</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<h1>Вхід для клієнта</h1>
+<form action="/send-otp" method="POST">
+  <label for="phone">Номер телефону:</label>
+  <input type="text" id="phone" name="phone" required><br>
+  <button type="submit">Отримати код для входу</button>
+</form>
+
+<p>Ще не зареєстровані?</p>
+<button onclick="window.location.href='/register-client'">Реєстрація</button>
+</body>
+</html>

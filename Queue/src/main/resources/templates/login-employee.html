@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Логін для працівників</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<h1>Вхід для працівників</h1>
+<form action="/authenticate-employee" method="POST">
+    <label for="username">Ім'я користувача:</label>
+    <input type="text" id="username" name="username" required><br>
+    <label for="password">Пароль:</label>
+    <input type="password" id="password" name="password" required><br>
+    <button type="submit">Увійти</button>
+</form>
+</body>
+</html>
