@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Керування працівниками</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<h1>Керування працівниками</h1>
+
+<h2>Додати працівника</h2>
+<form id="addEmployeeForm">
+  <input type="text" id="employeeUsername" placeholder="Ім'я користувача" required>
+  <input type="password" id="employeePassword" placeholder="Пароль" required>
+  <input type="role" id="employeeRole" placeholder="Роль" required>
+  <button type="submit">Додати працівника</button>
+</form>
+
+<h2>Оновити працівника</h2>
+<form id="updateEmployeeForm">
+  <select id="employeeIdToUpdate" required>
+    <option value="">Виберіть працівника</option>
+  </select>
+  <input type="text" id="updatedEmployeeUsername" placeholder="Нове ім'я користувача" required>
+  <input type="password" id="updatedEmployeePassword" placeholder="Новий пароль" required>
+  <input type="role" id="updatedEmployeeRole" placeholder="Нова Роль" required>
+  <button type="submit">Оновити працівника</button>
+</form>
+
+<h2>Видалити працівника</h2>
+<form id="deleteEmployeeForm">
+  <select id="employeeIdToDelete" required>
+    <option value="">Виберіть працівника</option>
+  </select>
+  <button type="submit">Видалити працівника</button>
+</form>
+
+<script>
+  // Завантажити всіх працівників для оновлення і видалення
+  fetch('/admin-dashboard/employees')
+          .then(response => response.json())
+          .then(employees => {
+            const updateSelect = document.getElementById('employeeIdToUpdate');
+            const deleteSelect = document.getElementById('employeeIdToDelete');
+            employees.forEach(employee => {
+              const option = document.createElement('option');
+              option.value = employee.id;
+              option.textContent = employee.username;
+              updateSelect.appendChild(option);
+              deleteSelect.appendChild(option.cloneNode(true));  // Клон для іншої форми
+            });
+          })
+          .catch(error => console.error('Error:', error));
+
+  // Додати нового працівника
+  document.getElementById('addEmployeeForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const username = document.getElementById('employeeUsername').value;
+    const password = document.getElementById('employeePassword').value;
+    const role = document.getElementById('employeeRole').value;
+
+    fetch('/admin-dashboard/employees/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: username,
+        password: password,
+        role: role
+      })
+    }).then(response => response.json())
+            .then(data => {
+              alert('Працівника успішно додано: ' + data.username);
+              location.reload();  // Перезавантажити сторінку після додавання
+            })
+            .catch(error => console.error('Error:', error));
+  });
+
+  // Оновити існуючого працівника
+  document.getElementById('updateEmployeeForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const employeeId = document.getElementById('employeeIdToUpdate').value;
+    const updatedUsername = document.getElementById('updatedEmployeeUsername').value;
+    const updatedPassword = document.getElementById('updatedEmployeePassword').value;
+    const updatedRole = document.getElementById('updatedEmployeeRole').value;
+
+    fetch(`/admin-dashboard/employees/update/${employeeId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: updatedUsername,
+        password: updatedPassword,
+        role: updatedRole
+      })
+    }).then(response => response.json())
+            .then(data => {
+              alert('Працівника успішно оновлено: ' + data.username);
+              location.reload();  // Перезавантажити сторінку після оновлення
+            })
+            .catch(error => console.error('Error:', error));
+  });
+
+  // Видалити працівника
+  document.getElementById('deleteEmployeeForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const employeeId = document.getElementById('employeeIdToDelete').value;
+
+    fetch(`/admin-dashboard/employees/delete/${employeeId}`, {
+      method: 'DELETE'
+    }).then(response => {
+      if (response.ok) {
+        alert('Працівника успішно видалено');
+        location.reload();  // Перезавантажити сторінку після видалення
+      }
+    }).catch(error => console.error('Error:', error));
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Авторизація</title>
+</head>
+<body>
+<h1>Увійдіть в систему</h1>
+<form th:action="@{/login}" method="POST">
+  <label for="username">Ім'я користувача:</label>
+  <input type="text" id="username" name="username" required><br>
+
+  <label for="password">Пароль:</label>
+  <input type="password" id="password" name="password" required><br>
+
+  <button type="submit">Увійти</button>
+
+  <!-- Виводимо повідомлення про помилку, якщо є -->
+  <p th:if="${error}" th:text="${error}" style="color:red;"></p>
+</form>
+</body>
+</html>

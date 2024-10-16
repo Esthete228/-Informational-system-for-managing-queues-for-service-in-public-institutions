@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Запис на послугу</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<h1>Запис на послугу</h1>
+
+<form id="bookAppointmentForm">
+  <label for="serviceId">Виберіть послугу:</label>
+  <select id="serviceId" required>
+    <option value="">Виберіть послугу</option>
+    <!-- Цей список буде заповнений з бази даних -->
+  </select>
+
+  <label for="appointmentTime">Час запису:</label>
+  <input type="datetime-local" id="appointmentTime" required> <!-- Вибір часу запису -->
+
+  <input type="hidden" id="clientId" value="${clientId}"> <!-- Припустимо, ви зберігаєте clientId у сесії -->
+
+  <button type="submit">Записатися</button>
+</form>
+
+<script>
+  // Завантаження всіх послуг для запису клієнта
+  fetch('/services/all-services')
+          .then(response => response.json())
+          .then(services => {
+            const serviceSelect = document.getElementById('serviceId'); // Вибираємо правильний select
+            services.forEach(service => {
+              const option = document.createElement('option');
+              option.value = service.id;
+              option.textContent = service.serviceName; // Відображаємо назву послуги
+              serviceSelect.appendChild(option); // Додаємо опцію у select
+            });
+          })
+          .catch(error => console.error('Error:', error));
+
+  // Логіка для бронювання послуги
+  document.getElementById('bookAppointmentForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const serviceId = document.getElementById('serviceId').value;
+    const appointmentTime = document.getElementById('appointmentTime').value;
+    const clientId = document.getElementById('clientId').value;
+
+    if (!clientId) {
+      alert('Не вдалося отримати ваш ідентифікатор клієнта. Спробуйте ще раз.');
+      return;
+    }
+
+    fetch('/appointments/book', { // Правильний шлях
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        serviceId: serviceId,
+        clientId: clientId,
+        appointmentTime: appointmentTime
+      })
+    })
+            .then(response => {
+              if (response.ok) {
+                alert('Запис успішно створено!');
+                location.reload();
+              } else {
+                response.text().then(text => alert('Не вдалося створити запис: ' + text));
+              }
+            })
+            .catch(error => console.error('Error:', error));
+  });
+</script>
+</body>
+</html>

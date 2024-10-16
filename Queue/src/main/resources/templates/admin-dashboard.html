@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Адміністративна панель</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<h1>Адміністративна панель</h1>
+
+<!-- Кнопки для переходу на окремі сторінки -->
+<button onclick="window.location.href='/admin-dashboard/services'">Керування послугами</button>
+<button onclick="window.location.href='/admin-dashboard/employees'">Керування працівниками</button>
+
+<h2>Моніторинг черг</h2>
+<div id="queueList"></div>
+
+<script>
+    // Отримати всі черги
+    fetch('/admin-dashboard/queues')
+        .then(response => response.json())
+        .then(data => {
+            const queueList = document.getElementById('queueList');
+            queueList.innerHTML = '<ul>' + data.map(queue => `<li>${queue.id}: ${queue.service.name} - ${queue.user.phoneNumber}</li>`).join('') + '</ul>';
+        })
+        .catch(error => console.error('Error:', error));
+</script>
+</body>
+</html>
