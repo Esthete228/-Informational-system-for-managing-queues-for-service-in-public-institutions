@@ -14,9 +14,9 @@ import org.springframework.web.servlet.ModelAndView;
 public class ClientRegistrationController {
 
     private final ClientRepository clientRepository;
-
     private final OTPService otpService;
 
+    @Autowired
     public ClientRegistrationController(ClientRepository clientRepository, OTPService otpService) {
         this.clientRepository = clientRepository;
         this.otpService = otpService;
@@ -29,7 +29,12 @@ public class ClientRegistrationController {
 
     @PostMapping("/register-client")
     public ModelAndView registerClient(@RequestParam String name, @RequestParam String phone) {
-        // Створюємо нового користувача з роллю "user"
+        // Перевірка наявності клієнта з таким же номером телефону
+        if (clientRepository.findByPhoneNumber(phone).isPresent()) {
+            return new ModelAndView("registration-client", "error", "Клієнт з таким номером телефону вже зареєстрований.");
+        }
+
+        // Створюємо нового користувача з роллю "client"
         Client client = new Client();
         client.setUsername(name);
         client.setPhoneNumber(phone);
@@ -43,4 +48,3 @@ public class ClientRegistrationController {
         return new ModelAndView("otp-verification-reg", "phone", phone);
     }
 }
-

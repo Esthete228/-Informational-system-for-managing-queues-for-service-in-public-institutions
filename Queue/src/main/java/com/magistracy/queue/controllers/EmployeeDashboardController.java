@@ -1,5 +1,6 @@
 package com.magistracy.queue.controllers;
 
+import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -7,7 +8,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class EmployeeDashboardController {
 
     @GetMapping("/employee-dashboard")
-    public String showEmployeeDashboard() {
+    public String showEmployeeDashboard(HttpSession session) {
+        // Перевірка, чи користувач є авторизованим працівником
+        String role = (String) session.getAttribute("role");
+        if (role == null || !role.equals("employee")) {
+            return "redirect:/login-employee";  // Перенаправляємо на сторінку входу, якщо не авторизований
+        }
+
         return "employee-dashboard";  // Повертає HTML-шаблон панелі працівника
     }
 }

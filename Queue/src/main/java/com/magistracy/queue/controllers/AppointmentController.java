@@ -8,12 +8,15 @@ import com.magistracy.queue.repositories.ClientRepository;
 import com.magistracy.queue.repositories.ServiceEntityRepository;
 import com.magistracy.queue.services.AppointmentService;
 
+import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+
 @RestController
 @RequestMapping("/appointments")
 public class AppointmentController {
@@ -28,12 +31,31 @@ public class AppointmentController {
         this.clientRepository = clientRepository;
     }
 
+    @GetMapping("/book-appointment")
+    public String showBookingPage(Model model, HttpSession session) {
+        // Отримання ID клієнта із сесії
+        Long clientId = (Long) session.getAttribute("clientId");
+
+        if (clientId == null) {
+            throw new RuntimeException("Клієнт не авторизований");
+        }
+
+        model.addAttribute("clientId", clientId); // Передаємо clientId у модель
+        return "book-appointment"; // Назва HTML шаблону для сторінки бронювання
+    }
+
     @PostMapping("/book")
-    public ResponseEntity<?> bookAppointment(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> bookAppointment(@RequestBody Map<String, Object> request, HttpSession session) {
         try {
-            // Витягуємо параметри з запиту
-            Long serviceId = Long.valueOf((String) request.get("serviceId"));  // Перетворення значення на Long
-            Long clientId = Long.valueOf((String) request.get("clientId"));    // Перетворення значення на Long
+            // Отримуємо clientId з сесії, а не з запиту
+            Long clientId = (Long) session.getAttribute("clientId");
+
+            if (clientId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Клієнт не авторизований");
+            }
+
+            // Витягуємо інші параметри з запиту
+            Long serviceId = Long.valueOf((String) request.get("serviceId"));
             String appointmentTimeStr = (String) request.get("appointmentTime");
             LocalDateTime appointmentTime = LocalDateTime.parse(appointmentTimeStr);
 

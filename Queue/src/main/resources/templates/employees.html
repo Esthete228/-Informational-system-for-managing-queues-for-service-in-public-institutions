@@ -38,7 +38,7 @@
 
 <script>
   // Завантажити всіх працівників для оновлення і видалення
-  fetch('/admin-dashboard/employees')
+  fetch('/admin-dashboard/employees/all-employees')
           .then(response => response.json())
           .then(employees => {
             const updateSelect = document.getElementById('employeeIdToUpdate');

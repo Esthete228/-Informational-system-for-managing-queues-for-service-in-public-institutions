@@ -33,7 +33,7 @@ document.getElementById('verifyOtp').onclick = async function() {
     if (response.ok) {
         alert('Авторизація успішна!');
         // Перенаправити на кабінет користувача
-        window.location.href = 'dashboard.html';
+        window.location.href = 'client-dashboard';
     } else {
         alert('Невірний OTP код');
     }

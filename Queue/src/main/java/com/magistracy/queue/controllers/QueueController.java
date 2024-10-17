@@ -19,11 +19,10 @@ import java.util.List;
 public class QueueController {
 
     private final QueueRepository queueRepository;
-
     private final ServiceEntityRepository serviceEntityRepository;
-
     private final ClientRepository clientRepository;
 
+    @Autowired
     public QueueController(QueueRepository queueRepository, ServiceEntityRepository serviceEntityRepository, ClientRepository clientRepository) {
         this.queueRepository = queueRepository;
         this.serviceEntityRepository = serviceEntityRepository;
@@ -33,8 +32,10 @@ public class QueueController {
     // Створення запису в черзі для користувача
     @PostMapping("/create")
     public ResponseEntity<String> createQueueEntry(@RequestParam Long userId, @RequestParam Long serviceId, @RequestParam String appointmentTime) {
-        Client client = clientRepository.findById(userId).orElseThrow(() -> new RuntimeException("Користувача не знайдено"));
-        ServiceEntity service = serviceEntityRepository.findById(serviceId).orElseThrow(() -> new RuntimeException("Послугу не знайдено"));
+        Client client = clientRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Користувача не знайдено"));
+        ServiceEntity service = serviceEntityRepository.findById(serviceId)
+                .orElseThrow(() -> new RuntimeException("Послугу не знайдено"));
 
         // Перевіряємо, чи вільний час
         LocalDateTime time = LocalDateTime.parse(appointmentTime);
@@ -57,7 +58,8 @@ public class QueueController {
     // Отримання черги для певної послуги
     @GetMapping("/service/{serviceId}")
     public ResponseEntity<List<Queue>> getQueueForService(@PathVariable Long serviceId) {
-        ServiceEntity serviceEntity = serviceEntityRepository.findById(serviceId).orElseThrow(() -> new RuntimeException("Послугу не знайдено"));
+        ServiceEntity serviceEntity = serviceEntityRepository.findById(serviceId)
+                .orElseThrow(() -> new RuntimeException("Послугу не знайдено"));
         List<Queue> queueList = queueRepository.findByServiceEntity(serviceEntity);
         return ResponseEntity.ok(queueList);
     }
@@ -94,7 +96,8 @@ public class QueueController {
     // Виклик клієнта до обслуговування
     @PostMapping("/call-client")
     public ResponseEntity<String> callNextClient(@RequestParam Long serviceId) {
-        ServiceEntity service = serviceEntityRepository.findById(serviceId).orElseThrow(() -> new RuntimeException("Послугу не знайдено"));
+        ServiceEntity service = serviceEntityRepository.findById(serviceId)
+                .orElseThrow(() -> new RuntimeException("Послугу не знайдено"));
         List<Queue> queueList = queueRepository.findByServiceEntityOrderByAppointmentTimeAsc(service);
 
         if (queueList.isEmpty()) {
@@ -106,6 +109,4 @@ public class QueueController {
         queueRepository.delete(nextClient); // Видаляємо після обслуговування
         return ResponseEntity.ok("Клієнта " + nextClient.getUser().getUsername() + " викликано до обслуговування");
     }
-
-
 }

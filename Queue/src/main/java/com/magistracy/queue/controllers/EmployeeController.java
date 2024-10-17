@@ -14,6 +14,7 @@ public class EmployeeController {
 
     private final EmployeeRepository employeeRepository;
 
+    @Autowired
     public EmployeeController(EmployeeRepository employeeRepository) {
         this.employeeRepository = employeeRepository;
     }
@@ -27,14 +28,19 @@ public class EmployeeController {
 
     // Додати нового працівника
     @PostMapping("/add")
-    public ResponseEntity<Employee> addEmployee(@RequestBody Employee employee) {
+    public ResponseEntity<?> addEmployee(@RequestBody Employee employee) {
+        // Валідація даних працівника
+        if (employee.getUsername() == null || employee.getPassword() == null || employee.getRole() == null) {
+            return ResponseEntity.badRequest().body("Не всі поля заповнені.");
+        }
+
         Employee newEmployee = employeeRepository.save(employee);
         return ResponseEntity.ok(newEmployee);
     }
 
     // Оновити існуючого працівника
     @PutMapping("/update/{employeeId}")
-    public ResponseEntity<Employee> updateEmployee(@PathVariable Long employeeId, @RequestBody Employee updatedEmployee) {
+    public ResponseEntity<?> updateEmployee(@PathVariable Long employeeId, @RequestBody Employee updatedEmployee) {
         return employeeRepository.findById(employeeId)
                 .map(employee -> {
                     employee.setUsername(updatedEmployee.getUsername());
@@ -47,6 +53,10 @@ public class EmployeeController {
     // Видалити працівника
     @DeleteMapping("/delete/{employeeId}")
     public ResponseEntity<String> deleteEmployee(@PathVariable Long employeeId) {
+        if (!employeeRepository.existsById(employeeId)) {
+            return ResponseEntity.notFound().build(); // Якщо працівник не знайдений
+        }
+
         employeeRepository.deleteById(employeeId);
         return ResponseEntity.ok("Працівника успішно видалено");
     }

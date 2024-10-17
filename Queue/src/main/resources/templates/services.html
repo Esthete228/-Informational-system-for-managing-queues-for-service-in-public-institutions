@@ -56,11 +56,13 @@
   // Додати нову послугу
   document.getElementById('addServiceForm').addEventListener('submit', function(event) {
     event.preventDefault();
+    console.log("Надсилаємо запит на додавання послуги...");
+
     const serviceName = document.getElementById('serviceName').value;
     const serviceDescription = document.getElementById('serviceDescription').value;
-    const assignedWorkplaces = document.getElementById('assignedWorkplaces').value.split(',');  // Розділити через кому
+    const assignedWorkplaces = document.getElementById('assignedWorkplaces').value.split(',');
 
-    fetch('/admin-dashboard/services/add', {
+    fetch('/services/add', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -68,11 +70,13 @@
       body: JSON.stringify({
         serviceName: serviceName,
         serviceDescription: serviceDescription,
-        assignedWorkplaces: assignedWorkplaces  // Додаємо як масив
+        assignedWorkplaces: assignedWorkplaces
       })
-    }).then(response => response.json())
+    })
+            .then(response => response.json())
             .then(data => {
-              alert('Послугу успішно додано: ' + data.serviceName);
+              console.log("Отримано відповідь:", data);
+              alert('Послугу успішно додано: ' + (data.serviceName || 'Не вказано'));
               location.reload();
             })
             .catch(error => console.error('Error:', error));
@@ -86,7 +90,7 @@
     const updatedServiceDescription = document.getElementById('updatedServiceDescription').value;
     const updatedAssignedWorkplaces = document.getElementById('updatedAssignedWorkplaces').value.split(',');  // Розділити через кому
 
-    fetch(`/admin-dashboard/services/update/${serviceId}`, {
+    fetch(`/services/update/${serviceId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -109,7 +113,7 @@
     event.preventDefault();
     const serviceId = document.getElementById('serviceIdToDelete').value;
 
-    fetch(`/admin-dashboard/services/delete/${serviceId}`, {
+    fetch(`/services/delete/${serviceId}`, {
       method: 'DELETE'
     }).then(response => {
       if (response.ok) {

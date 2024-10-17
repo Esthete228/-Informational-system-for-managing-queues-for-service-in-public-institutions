@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 import java.util.Optional;
@@ -17,57 +18,79 @@ import java.util.Optional;
 @Controller
 public class AuthController {
 
-    @Autowired
-    private EmployeeRepository employeeRepository; // Для отримання даних про працівників
+    private final EmployeeRepository employeeRepository;
+    private final ClientRepository clientRepository;
+    private final OTPService otpService;
 
     @Autowired
-    private ClientRepository clientRepository;
+    public AuthController(EmployeeRepository employeeRepository, ClientRepository clientRepository, OTPService otpService) {
+        this.employeeRepository = employeeRepository;
+        this.clientRepository = clientRepository;
+        this.otpService = otpService;
+    }
 
-    @Autowired
-    private OTPService otpService;
-    // Перехід на сторінку логіну для працівників
     @GetMapping("/login-employee")
     public String employeeLoginPage() {
         return "login-employee";  // Повертаємо login-employee.html
     }
 
-    // Перехід на сторінку логіна для клієнтів
     @GetMapping("/login-client")
     public String clientLoginPage() {
         return "login-client";  // Повертаємо login-client.html
     }
 
-    // Перехід на dashboard для працівників після успішної авторизації
-    @PostMapping("/authenticate-employee")
-    public ModelAndView authenticateEmployee(String username, String password) {
-        Optional<Employee> employee = employeeRepository.findByUsername(username);
+    private ModelAndView authenticateUser(String userId, String role, HttpSession session, String redirectUrl) {
+        session.setAttribute("userId", userId);
+        session.setAttribute("role", role);
+        return new ModelAndView("redirect:" + redirectUrl);
+    }
 
-        // Перевірка, чи працівник існує та чи вірний пароль
+    @PostMapping("/authenticate-employee")
+    public ModelAndView authenticateEmployee(String username, String password, HttpSession session) {
+        Optional<Employee> employee = employeeRepository.findByUsername(username);
         if (employee.isPresent() && employee.get().getPassword().equals(password)) {
             String role = employee.get().getRole();
-            if ("admin".equals(role)) {
-                return new ModelAndView("redirect:/admin-dashboard");  // Адміністратор
-            } else if ("employee".equals(role)) {
-                return new ModelAndView("redirect:/employee-dashboard");  // Працівник
-            }
+            return authenticateUser(employee.get().getId().toString(), role, session, role.equals("admin") ? "/admin-dashboard" : "/employee-dashboard");
         }
-
-        return new ModelAndView("login-employee", "error", "Невірні облікові дані"); // Помилка
+        return new ModelAndView("login-employee", "error", "Невірні облікові дані");
     }
 
-    @PostMapping("/authenticate-client")
-    public ModelAndView authenticateClient(String phoneNumber, String otp, HttpSession session) {
-        Client client = clientRepository.findByPhoneNumber(phoneNumber)
-                .orElseThrow(() -> new RuntimeException("Клієнт не знайдений"));
+    @PostMapping("/send-otp")
+    public ModelAndView sendOtp(@RequestParam String phone) {
+        String otpCode = otpService.generateOTP();
+        otpService.saveOtp(phone, otpCode);
+        return new ModelAndView("otp-verification", "phone", phone);
+    }
 
-        if (otpService.verifyOtp(phoneNumber, otp)) {
-            session.setAttribute("clientId", client.getId());  // Зберігаємо clientId у сесії
+    @PostMapping("/verify-otp")
+    public ModelAndView verifyOtp(@RequestParam String phone, @RequestParam String otp, HttpSession session) {
+        if (otpService.verifyOtp(phone, otp)) {
+            Client client = clientRepository.findByPhoneNumber(phone)
+                    .orElseThrow(() -> new RuntimeException("Клієнт не знайдений"));
+            session.setAttribute("clientId", client.getId());
+            session.setAttribute("role", "client");
             return new ModelAndView("redirect:/client-dashboard");
         } else {
-            ModelAndView mav = new ModelAndView("login-client");
-            mav.addObject("error", "Невірний OTP код");
-            return mav;
+            return new ModelAndView("otp-verification", "error", "Невірний OTP код");
         }
     }
-}
 
+    @PostMapping("/verify-register-otp")
+    public ModelAndView verifyRegisterOtp(@RequestParam String phone, @RequestParam String otp, HttpSession session) {
+        if (otpService.verifyOtp(phone, otp)) {
+            Client client = clientRepository.findByPhoneNumber(phone)
+                    .orElseThrow(() -> new RuntimeException("Клієнт не знайдений"));
+            session.setAttribute("clientId", client.getId());
+            session.setAttribute("role", "client");
+            return new ModelAndView("redirect:/login-client");
+        } else {
+            return new ModelAndView("otp-verification-reg", "error", "Невірний OTP код");
+        }
+    }
+
+    @GetMapping("/logout")
+    public String logout(HttpSession session) {
+        session.invalidate();
+        return "redirect:/";
+    }
+}
