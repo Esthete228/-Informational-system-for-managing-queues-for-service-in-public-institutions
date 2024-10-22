@@ -1,8 +1,12 @@
 package com.magistracy.queue.controllers;
 
 import com.magistracy.queue.entities.Employee;
+import com.magistracy.queue.entities.Workplace;
 import com.magistracy.queue.repositories.EmployeeRepository;
+import com.magistracy.queue.services.EmployeeService;
+import com.magistracy.queue.services.WorkplaceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,9 +18,15 @@ public class EmployeeController {
 
     private final EmployeeRepository employeeRepository;
 
+    private final EmployeeService employeeService;
+
+    private final WorkplaceService workplaceService;
+
     @Autowired
-    public EmployeeController(EmployeeRepository employeeRepository) {
+    public EmployeeController(EmployeeRepository employeeRepository, EmployeeService employeeService, WorkplaceService workplaceService) {
         this.employeeRepository = employeeRepository;
+        this.employeeService = employeeService;
+        this.workplaceService = workplaceService;
     }
 
     // Отримати всіх працівників
@@ -26,32 +36,28 @@ public class EmployeeController {
         return ResponseEntity.ok(employees);
     }
 
-    // Додати нового працівника
-    @PostMapping("/add")
-    public ResponseEntity<?> addEmployee(@RequestBody Employee employee) {
-        // Валідація даних працівника
-        if (employee.getUsername() == null || employee.getPassword() == null || employee.getRole() == null) {
-            return ResponseEntity.badRequest().body("Не всі поля заповнені.");
+    @PostMapping("/add-employee")
+    public ResponseEntity<Employee> addEmployee(@RequestBody Employee employee) {
+        try {
+            Employee savedEmployee = employeeService.save(employee);
+            return ResponseEntity.ok(savedEmployee);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
-
-        Employee newEmployee = employeeRepository.save(employee);
-        return ResponseEntity.ok(newEmployee);
     }
 
-    // Оновити існуючого працівника
-    @PutMapping("/update/{employeeId}")
-    public ResponseEntity<?> updateEmployee(@PathVariable Long employeeId, @RequestBody Employee updatedEmployee) {
-        return employeeRepository.findById(employeeId)
-                .map(employee -> {
-                    employee.setUsername(updatedEmployee.getUsername());
-                    employee.setPassword(updatedEmployee.getPassword());
-                    Employee savedEmployee = employeeRepository.save(employee);
-                    return ResponseEntity.ok(savedEmployee);
-                }).orElse(ResponseEntity.notFound().build());
+    @PutMapping("/update-employee/{employeeId}")
+    public ResponseEntity<Employee> updateEmployee(@PathVariable Long employeeId, @RequestBody Employee employee) {
+        Employee existingEmployee = employeeService.findById(employeeId);
+        existingEmployee.setUsername(employee.getUsername());
+        existingEmployee.setPassword(employee.getPassword());
+        existingEmployee.setRole(employee.getRole());
+        employeeService.save(existingEmployee);
+        return ResponseEntity.ok(existingEmployee);
     }
 
     // Видалити працівника
-    @DeleteMapping("/delete/{employeeId}")
+    @DeleteMapping("/delete-employee/{employeeId}")
     public ResponseEntity<String> deleteEmployee(@PathVariable Long employeeId) {
         if (!employeeRepository.existsById(employeeId)) {
             return ResponseEntity.notFound().build(); // Якщо працівник не знайдений

@@ -3,14 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Аутентифікація</title>
+    <title>Головна сторінка: Вибір ролі та Поточна черга</title>
     <link rel="stylesheet" href="styles.css"> <!-- Ваші стилі -->
 </head>
 <body>
+
 <h1>Оберіть вашу роль</h1>
 <div class="buttons">
     <button onclick="window.location.href='/login-employee'">Я працівник</button>
     <button onclick="window.location.href='/login-client'">Я клієнт</button>
 </div>
+
+<hr>
+
+<h2>Поточна жива черга</h2>
+<div id="queue"></div>
+
+<script>
+    function updateLiveQueue() {
+        fetch('/queues/current-queue')
+            .then(response => response.json())
+            .then(queue => {
+                const queueDiv = document.getElementById('queue');
+                queueDiv.innerHTML = '';
+                if (queue.length === 0) {
+                    queueDiv.innerHTML = '<p>Черга пуста.</p>';
+                } else {
+                    queue.forEach(entry => {
+                        const entryElement = document.createElement('div');
+                        entryElement.innerHTML = `
+                    <p>Талон №${entry.ticketNumber}: Послуга ${entry.serviceEntity.serviceName} - Віконце ${entry.workplace.windowNumber}</p>
+                    <hr>
+                `;
+                        queueDiv.appendChild(entryElement);
+                    });
+                }
+            });
+    }
+
+    setInterval(loadQueue, 5000);  // Оновлювати кожні 5 секунд
+    updateLiveQueue();  // Перший виклик
+</script>
+
 </body>
 </html>

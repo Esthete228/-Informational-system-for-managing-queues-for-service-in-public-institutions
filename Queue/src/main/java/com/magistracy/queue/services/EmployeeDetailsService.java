@@ -1,3 +1,4 @@
+/*
 package com.magistracy.queue.services;
 
 import com.magistracy.queue.entities.Employee;
@@ -36,3 +37,4 @@ public class EmployeeDetailsService implements UserDetailsService {
                 .build();
     }
 }
+*/

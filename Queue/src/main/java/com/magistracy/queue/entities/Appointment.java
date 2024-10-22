@@ -12,7 +12,7 @@ public class Appointment {
 
     @ManyToOne
     @JoinColumn(name = "service_entity_id", nullable = false)
-    private ServiceEntity service;
+    private ServiceEntity serviceEntity;
 
     @ManyToOne
     @JoinColumn(name = "client_id", nullable = false)
@@ -29,12 +29,12 @@ public class Appointment {
         this.id = id;
     }
 
-    public ServiceEntity getService() {
-        return service;
+    public ServiceEntity getServiceEntity() {
+        return serviceEntity;
     }
 
-    public void setService(ServiceEntity service) {
-        this.service = service;
+    public void setServiceEntity(ServiceEntity serviceEntity) {
+        this.serviceEntity = serviceEntity;
     }
 
     public Client getClient() {

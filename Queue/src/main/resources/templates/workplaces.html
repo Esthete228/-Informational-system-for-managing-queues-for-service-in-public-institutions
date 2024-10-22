@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Керування робочими місцями</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<h1>Керування робочими місцями</h1>
+
+<h2>Додати робоче місце</h2>
+<form id="addWorkplaceForm">
+  <input type="text" id="workplaceName" placeholder="Назва робочого місця" required>
+  <button type="submit">Додати робоче місце</button>
+</form>
+
+<h2>Оновити робоче місце</h2>
+<form id="updateWorkplaceForm">
+  <select id="workplaceIdToUpdate" required>
+    <option value="">Виберіть робоче місце</option>
+  </select>
+  <input type="text" id="updatedWorkplaceName" placeholder="Нова назва робочого місця" required>
+  <button type="submit">Оновити робоче місце</button>
+</form>
+
+<h2>Видалити робоче місце</h2>
+<form id="deleteWorkplaceForm">
+  <select id="workplaceIdToDelete" required>
+    <option value="">Виберіть робоче місце</option>
+  </select>
+  <button type="submit">Видалити робоче місце</button>
+</form>
+
+<div id="workplaceList"></div>
+
+<script>
+  // Завантаження всіх робочих місць
+  function loadWorkplaces() {
+    fetch('/admin-dashboard/workplaces/all-workplaces')
+            .then(response => response.json())
+            .then(workplaces => {
+              const updateSelect = document.getElementById('workplaceIdToUpdate');
+              const deleteSelect = document.getElementById('workplaceIdToDelete');
+              const workplaceList = document.getElementById('workplaceList');
+
+              // Очищаємо попередній вміст
+              updateSelect.innerHTML = '<option value="">Виберіть робоче місце</option>';
+              deleteSelect.innerHTML = '<option value="">Виберіть робоче місце</option>';
+              workplaceList.innerHTML = '<ul>' + workplaces.map(workplace =>
+                      `<li>ID: ${workplace.id}, Назва: ${workplace.workplaceName}</li>`
+              ).join('') + '</ul>';
+
+              workplaces.forEach(workplace => {
+                const optionUpdate = document.createElement('option');
+                optionUpdate.value = workplace.id;
+                optionUpdate.textContent = `ID: ${workplace.id}, Назва: ${workplace.workplaceName}`;
+                updateSelect.appendChild(optionUpdate);
+
+                const optionDelete = document.createElement('option');
+                optionDelete.value = workplace.id;
+                optionDelete.textContent = `ID: ${workplace.id}, Назва: ${workplace.workplaceName}`;
+                deleteSelect.appendChild(optionDelete);
+              });
+            })
+            .catch(error => console.error('Error fetching workplaces:', error));
+  }
+
+  // Додати нове робоче місце
+  document.getElementById('addWorkplaceForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const workplaceName = document.getElementById('workplaceName').value;
+
+    fetch('/admin-dashboard/workplaces/add-workplace', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        workplaceName: workplaceName
+      })
+    })
+            .then(response => response.json())
+            .then(data => {
+              alert('Робоче місце успішно додано: ' + data.workplaceName);
+              loadWorkplaces();
+            })
+            .catch(error => console.error('Error:', error));
+  });
+
+  // Оновити робоче місце
+  document.getElementById('updateWorkplaceForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const workplaceId = document.getElementById('workplaceIdToUpdate').value;
+    const updatedWorkplaceName = document.getElementById('updatedWorkplaceName').value;
+
+    fetch(`/admin-dashboard/workplaces/update-workplace/${workplaceId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        workplaceName: updatedWorkplaceName
+      })
+    })
+            .then(response => response.json())
+            .then(data => {
+              alert('Робоче місце успішно оновлено: ' + data.workplaceName);
+              loadWorkplaces();
+            })
+            .catch(error => console.error('Error:', error));
+  });
+
+  // Видалити робоче місце
+  document.getElementById('deleteWorkplaceForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const workplaceId = document.getElementById('workplaceIdToDelete').value;
+
+    fetch(`/admin-dashboard/workplaces/delete-workplace/${workplaceId}`, {
+      method: 'DELETE'
+    }).then(response => {
+      if (response.ok) {
+        alert('Робоче місце успішно видалено');
+        loadWorkplaces();
+      }
+    }).catch(error => console.error('Error:', error));
+  });
+
+  // Завантажити робочі місця при завантаженні сторінки
+  loadWorkplaces();
+</script>
+</body>
+</html>

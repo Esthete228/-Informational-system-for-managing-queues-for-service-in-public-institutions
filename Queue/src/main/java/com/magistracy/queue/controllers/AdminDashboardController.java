@@ -37,4 +37,14 @@ public class AdminDashboardController {
         }
         return new ModelAndView("redirect:/login-employee");  // Перенаправлення на логін, якщо роль не адміністратор
     }
+
+    @GetMapping("/admin-dashboard/workplaces")
+    public ModelAndView showWorkplacesDashboard(HttpSession session) {
+        String role = (String) session.getAttribute("role");
+        if ("admin".equals(role)) {
+            return new ModelAndView("workplaces");
+
+        }
+        return new ModelAndView("redirect:/login-employee");
+    }
 }

@@ -31,12 +31,12 @@ public class AuthController {
 
     @GetMapping("/login-employee")
     public String employeeLoginPage() {
-        return "login-employee";  // Повертаємо login-employee.html
+        return "login-employee";
     }
 
     @GetMapping("/login-client")
     public String clientLoginPage() {
-        return "login-client";  // Повертаємо login-client.html
+        return "login-client";
     }
 
     private ModelAndView authenticateUser(String userId, String role, HttpSession session, String redirectUrl) {

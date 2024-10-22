@@ -5,13 +5,104 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Особистий кабінет клієнта</title>
   <link rel="stylesheet" href="styles.css">
+  <!-- Include a library for datetime picker, like flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
 <h1>Особистий кабінет</h1>
-<p>Ваші записи в чергу:</p>
-<!-- Тут відображатимуться записи клієнта -->
-<a href="/appointments">Записатись на послугу</a>
-<a href="/appointments">Переглянути попередні записи</a>
-<input type="hidden" id="clientId" th:value="${clientId}">
+<button onclick="window.location.href='/appointments'">Записатись на послугу</button>
+
+<h1>Ваші записи</h1>
+<div id="appointments"></div>
+
+<!-- Modal for rescheduling -->
+<div id="rescheduleModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border: 1px solid #ccc; z-index: 1000;">
+  <h2>Перезапис</h2>
+  <label for="newAppointmentTime">Новий час:</label>
+  <input type="datetime-local" id="newAppointmentTime" required>
+  <input type="hidden" id="rescheduleAppointmentId">
+  <button onclick="submitReschedule()">Підтвердити</button>
+  <button onclick="closeModal()">Скасувати</button>
+</div>
+
+<!-- Overlay to darken the background when the modal is open -->
+<div id="modalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 500;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  // Fetch appointments and render them
+  fetch('/appointments/client-appointments')
+          .then(response => response.json())
+          .then(appointments => {
+            const appointmentsDiv = document.getElementById('appointments');
+            if (appointments.length === 0) {
+              appointmentsDiv.innerHTML = 'У вас немає записів.';
+            } else {
+              appointments.forEach(appointment => {
+                const appointmentElement = document.createElement('div');
+                appointmentElement.innerHTML = `
+            <strong>Послуга:</strong> ${appointment.serviceEntity.serviceName}<br>
+            <strong>Час запису:</strong> ${appointment.appointmentTime}<br>
+            <button onclick="openRescheduleModal(${appointment.id})">Перезапис</button>
+            <button onclick="deleteAppointment(${appointment.id})">Видалити</button>
+            <hr>
+          `;
+                appointmentsDiv.appendChild(appointmentElement);
+              });
+            }
+          })
+          .catch(error => {
+            console.error('There has been a problem with your fetch operation:', error);
+          });
+
+  // Open reschedule modal
+  function openRescheduleModal(appointmentId) {
+    document.getElementById('rescheduleAppointmentId').value = appointmentId;
+    document.getElementById('rescheduleModal').style.display = 'block';
+    document.getElementById('modalOverlay').style.display = 'block';
+  }
+
+  // Close the modal
+  function closeModal() {
+    document.getElementById('rescheduleModal').style.display = 'none';
+    document.getElementById('modalOverlay').style.display = 'none';
+  }
+
+  // Submit rescheduled appointment
+  function submitReschedule() {
+    const appointmentId = document.getElementById('rescheduleAppointmentId').value;
+    const newTime = document.getElementById('newAppointmentTime').value;
+
+    if (newTime) {
+      fetch(`/appointments/update/${appointmentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newAppointmentTime: newTime })
+      })
+              .then(response => {
+                if (response.ok) {
+                  closeModal();
+                  location.reload(); // Refresh page to show updated appointments
+                } else {
+                  alert("Не вдалося перезаписати запис. Спробуйте ще раз.");
+                }
+              });
+    }
+  }
+
+  // Delete appointment
+  function deleteAppointment(appointmentId) {
+    fetch(`/appointments/delete/${appointmentId}`, {
+      method: 'DELETE'
+    })
+            .then(response => {
+              if (response.ok) {
+                location.reload(); // Refresh page to show updated appointments
+              } else {
+                alert("Не вдалося видалити запис. Спробуйте ще раз.");
+              }
+            });
+  }
+</script>
 </body>
 </html>

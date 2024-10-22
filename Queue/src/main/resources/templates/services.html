@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,12 +8,16 @@
 </head>
 <body>
 <h1>Керування послугами</h1>
-
 <h2>Додати нову послугу</h2>
 <form id="addServiceForm">
   <input type="text" id="serviceName" placeholder="Назва послуги" required>
   <input type="text" id="serviceDescription" placeholder="Опис послуги" required>
-  <input type="text" id="assignedWorkplaces" placeholder="Робочі місця (через кому)" required>
+
+  <label for="assignedWorkplaces">Виберіть робочі місця:</label>
+  <select id="assignedWorkplaces" multiple required>
+    <!-- Робочі місця будуть завантажені динамічно -->
+  </select>
+
   <button type="submit">Додати послугу</button>
 </form>
 
@@ -24,7 +28,12 @@
   </select>
   <input type="text" id="updatedServiceName" placeholder="Нова назва послуги" required>
   <input type="text" id="updatedServiceDescription" placeholder="Новий опис послуги" required>
-  <input type="text" id="updatedAssignedWorkplaces" placeholder="Нові робочі місця (через кому)" required>
+
+  <label for="updatedAssignedWorkplaces">Виберіть нові робочі місця:</label>
+  <select id="updatedAssignedWorkplaces" multiple required>
+    <!-- Робочі місця будуть завантажені динамічно -->
+  </select>
+
   <button type="submit">Оновити послугу</button>
 </form>
 
@@ -46,23 +55,40 @@
             services.forEach(service => {
               const option = document.createElement('option');
               option.value = service.id;
-              option.textContent = service.serviceName;  // Зміна на serviceName
+              option.textContent = service.serviceName;
               updateSelect.appendChild(option);
               deleteSelect.appendChild(option.cloneNode(true));  // Клон для іншої форми
             });
           })
           .catch(error => console.error('Error:', error));
 
+  // Завантаження робочих місць для додавання та оновлення
+  fetch('/admin-dashboard/workplaces/all-workplaces')
+          .then(response => response.json())
+          .then(workplaces => {
+            const addWorkplaceSelect = document.getElementById('assignedWorkplaces');
+            const updateWorkplaceSelect = document.getElementById('updatedAssignedWorkplaces');
+
+            workplaces.forEach(workplace => {
+              const option = document.createElement('option');
+              option.value = workplace.id;
+              option.textContent = workplace.workplaceName;
+
+              addWorkplaceSelect.appendChild(option);
+              updateWorkplaceSelect.appendChild(option.cloneNode(true));  // Клон для іншої форми
+            });
+          })
+          .catch(error => console.error('Error fetching workplaces:', error));
+
   // Додати нову послугу
   document.getElementById('addServiceForm').addEventListener('submit', function(event) {
     event.preventDefault();
-    console.log("Надсилаємо запит на додавання послуги...");
 
     const serviceName = document.getElementById('serviceName').value;
     const serviceDescription = document.getElementById('serviceDescription').value;
-    const assignedWorkplaces = document.getElementById('assignedWorkplaces').value.split(',');
+    const assignedWorkplaces = Array.from(document.getElementById('assignedWorkplaces').selectedOptions).map(option => option.value);
 
-    fetch('/services/add', {
+    fetch('/services/add-service', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -70,13 +96,12 @@
       body: JSON.stringify({
         serviceName: serviceName,
         serviceDescription: serviceDescription,
-        assignedWorkplaces: assignedWorkplaces
+        workplaceIds: assignedWorkplaces  // Надсилаємо масив ID робочих місць
       })
     })
             .then(response => response.json())
             .then(data => {
-              console.log("Отримано відповідь:", data);
-              alert('Послугу успішно додано: ' + (data.serviceName || 'Не вказано'));
+              alert('Послугу успішно додано: ' + data.serviceName);
               location.reload();
             })
             .catch(error => console.error('Error:', error));
@@ -85,12 +110,13 @@
   // Оновити існуючу послугу
   document.getElementById('updateServiceForm').addEventListener('submit', function(event) {
     event.preventDefault();
+
     const serviceId = document.getElementById('serviceIdToUpdate').value;
     const updatedServiceName = document.getElementById('updatedServiceName').value;
     const updatedServiceDescription = document.getElementById('updatedServiceDescription').value;
-    const updatedAssignedWorkplaces = document.getElementById('updatedAssignedWorkplaces').value.split(',');  // Розділити через кому
+    const updatedWorkplaces = Array.from(document.getElementById('updatedAssignedWorkplaces').selectedOptions).map(option => option.value);
 
-    fetch(`/services/update/${serviceId}`, {
+    fetch(`/services/update-service/${serviceId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -98,9 +124,10 @@
       body: JSON.stringify({
         serviceName: updatedServiceName,
         serviceDescription: updatedServiceDescription,
-        assignedWorkplaces: updatedAssignedWorkplaces  // Додаємо як масив
+        workplaceIds: updatedWorkplaces  // Оновлюємо робочі місця
       })
-    }).then(response => response.json())
+    })
+            .then(response => response.json())
             .then(data => {
               alert('Послугу успішно оновлено: ' + data.serviceName);
               location.reload();
@@ -113,7 +140,7 @@
     event.preventDefault();
     const serviceId = document.getElementById('serviceIdToDelete').value;
 
-    fetch(`/services/delete/${serviceId}`, {
+    fetch(`/services/delete-service/${serviceId}`, {
       method: 'DELETE'
     }).then(response => {
       if (response.ok) {

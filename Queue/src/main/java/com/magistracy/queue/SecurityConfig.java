@@ -1,3 +1,4 @@
+/*
 package com.magistracy.queue;
 
 import com.magistracy.queue.services.ClientDetailsService;
@@ -34,3 +35,4 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
+*/

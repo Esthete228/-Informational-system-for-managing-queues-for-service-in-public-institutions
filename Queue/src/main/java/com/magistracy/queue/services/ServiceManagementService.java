@@ -1,37 +1,48 @@
 package com.magistracy.queue.services;
 
 import com.magistracy.queue.entities.ServiceEntity;
+import com.magistracy.queue.entities.Workplace;
 import com.magistracy.queue.repositories.ServiceEntityRepository;
+import com.magistracy.queue.repositories.WorkplaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class ServiceManagementService {
 
     private final ServiceEntityRepository serviceEntityRepository;
 
-    @Autowired
-    public ServiceManagementService(ServiceEntityRepository serviceEntityRepository) {
+    public ServiceManagementService(ServiceEntityRepository serviceEntityRepository, WorkplaceRepository workplaceRepository) {
         this.serviceEntityRepository = serviceEntityRepository;
     }
 
-    public ServiceEntity addService(ServiceEntity service) {
-        // Переконайтесь, що всі поля заповнені перед збереженням
-        System.out.println("Додаємо послугу з назвою: " + service.getServiceName());  // Додаємо логування
-        return serviceEntityRepository.save(service);
+    // Отримати всі послуги
+    public List<ServiceEntity> getAllServices() {
+        return serviceEntityRepository.findAll();
     }
 
-    public ServiceEntity updateService(Long serviceId, ServiceEntity updatedService) {
-        return serviceEntityRepository.findById(serviceId)
-                .map(service -> {
-                    service.setServiceName(updatedService.getServiceName());
-                    service.setServiceDescription(updatedService.getServiceDescription());
-                    service.setAssignedWorkplaces(updatedService.getAssignedWorkplaces());
-                    return serviceEntityRepository.save(service); // Оновлення в базі
-                }).orElseThrow(() -> new RuntimeException("Послугу не знайдено"));
+    // Додати нову послугу
+    public ServiceEntity addService(ServiceEntity serviceEntity) {
+        return serviceEntityRepository.save(serviceEntity);
     }
 
-    public void deleteService(Long serviceId) {
-        serviceEntityRepository.deleteById(serviceId);
+    // Оновити існуючу послугу
+    public ServiceEntity updateService(Long id, ServiceEntity serviceEntity) {
+        // Перш ніж оновити, потрібно перевірити, чи існує послуга
+        ServiceEntity existingService = serviceEntityRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Service not found with id: " + id));
+
+        existingService.setServiceName(serviceEntity.getServiceName());
+        existingService.setServiceDescription(serviceEntity.getServiceDescription());
+        existingService.setWorkplaces(serviceEntity.getWorkplaces());
+
+        return serviceEntityRepository.save(existingService);
+    }
+
+    // Видалити послугу
+    public void deleteService(Long id) {
+        serviceEntityRepository.deleteById(id);
     }
 }

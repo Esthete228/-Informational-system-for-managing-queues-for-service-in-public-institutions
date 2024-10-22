@@ -13,10 +13,14 @@ public class ServiceEntity {
     private String serviceName;  // Назва послуги
     private String serviceDescription;  // Опис послуги
 
-    @ElementCollection
-    @CollectionTable(name = "service_entity_assigned_workplaces", joinColumns = @JoinColumn(name = "service_entity_id"))
-    @Column(name = "assigned_workplaces")
-    private List<String> assignedWorkplaces;  // Список робочих місць
+    // Множинний зв'язок з робочими місцями
+    @ManyToMany
+    @JoinTable(
+            name = "service_workplace",
+            joinColumns = @JoinColumn(name = "service_id"),
+            inverseJoinColumns = @JoinColumn(name = "workplace_id")
+    )
+    private List<Workplace> workplaces;  // Прив'язка до одного або більше робочих місць
 
     // Геттери та сеттери
     public Long getId() {
@@ -43,12 +47,11 @@ public class ServiceEntity {
         this.serviceDescription = serviceDescription;
     }
 
-    public List<String> getAssignedWorkplaces() {
-        return assignedWorkplaces;
+    public List<Workplace> getWorkplaces() {
+        return workplaces;
     }
 
-    public void setAssignedWorkplaces(List<String> assignedWorkplaces) {
-        this.assignedWorkplaces = assignedWorkplaces;
+    public void setWorkplaces(List<Workplace> workplaces) {
+        this.workplaces = workplaces;
     }
-
 }

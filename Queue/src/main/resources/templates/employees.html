@@ -13,7 +13,13 @@
 <form id="addEmployeeForm">
   <input type="text" id="employeeUsername" placeholder="Ім'я користувача" required>
   <input type="password" id="employeePassword" placeholder="Пароль" required>
-  <input type="role" id="employeeRole" placeholder="Роль" required>
+
+  <label for="employeeRole">Роль:</label>
+  <select id="employeeRole" required>
+    <option value="">Виберіть роль</option>
+    <option value="employee">Працівник</option>
+    <option value="admin">Адміністратор</option>
+  </select>
   <button type="submit">Додати працівника</button>
 </form>
 
@@ -24,7 +30,13 @@
   </select>
   <input type="text" id="updatedEmployeeUsername" placeholder="Нове ім'я користувача" required>
   <input type="password" id="updatedEmployeePassword" placeholder="Новий пароль" required>
-  <input type="role" id="updatedEmployeeRole" placeholder="Нова Роль" required>
+
+  <label for="updatedEmployeeRole">Нова роль:</label>
+  <select id="updatedEmployeeRole" required>
+    <option value="">Виберіть нову роль</option>
+    <option value="employee">Працівник</option>
+    <option value="admin">Адміністратор</option>
+  </select>
   <button type="submit">Оновити працівника</button>
 </form>
 
@@ -39,7 +51,12 @@
 <script>
   // Завантажити всіх працівників для оновлення і видалення
   fetch('/admin-dashboard/employees/all-employees')
-          .then(response => response.json())
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Не вдалося завантажити працівників');
+            }
+            return response.json();
+          })
           .then(employees => {
             const updateSelect = document.getElementById('employeeIdToUpdate');
             const deleteSelect = document.getElementById('employeeIdToDelete');
@@ -58,9 +75,9 @@
     event.preventDefault();
     const username = document.getElementById('employeeUsername').value;
     const password = document.getElementById('employeePassword').value;
-    const role = document.getElementById('employeeRole').value;
+    const role = document.getElementById('employeeRole').value; // Отримання вибраної ролі
 
-    fetch('/admin-dashboard/employees/add', {
+    fetch('/admin-dashboard/employees/add-employee', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -70,12 +87,18 @@
         password: password,
         role: role
       })
-    }).then(response => response.json())
-            .then(data => {
-              alert('Працівника успішно додано: ' + data.username);
-              location.reload();  // Перезавантажити сторінку після додавання
-            })
-            .catch(error => console.error('Error:', error));
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error('Не вдалося додати працівника');
+      }
+      return response.json();
+    }).then(data => {
+      alert('Працівника успішно додано: ' + data.username);
+      location.reload();  // Перезавантажити сторінку після додавання
+    }).catch(error => {
+      alert('Виникла помилка: ' + error.message);
+      console.error('Error:', error);
+    });
   });
 
   // Оновити існуючого працівника
@@ -84,9 +107,9 @@
     const employeeId = document.getElementById('employeeIdToUpdate').value;
     const updatedUsername = document.getElementById('updatedEmployeeUsername').value;
     const updatedPassword = document.getElementById('updatedEmployeePassword').value;
-    const updatedRole = document.getElementById('updatedEmployeeRole').value;
+    const updatedRole = document.getElementById('updatedEmployeeRole').value; // Отримання вибраної нової ролі
 
-    fetch(`/admin-dashboard/employees/update/${employeeId}`, {
+    fetch(`/admin-dashboard/employees/update-employee/${employeeId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -96,12 +119,18 @@
         password: updatedPassword,
         role: updatedRole
       })
-    }).then(response => response.json())
-            .then(data => {
-              alert('Працівника успішно оновлено: ' + data.username);
-              location.reload();  // Перезавантажити сторінку після оновлення
-            })
-            .catch(error => console.error('Error:', error));
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error('Не вдалося оновити працівника');
+      }
+      return response.json();
+    }).then(data => {
+      alert('Працівника успішно оновлено: ' + data.username);
+      location.reload();  // Перезавантажити сторінку після оновлення
+    }).catch(error => {
+      alert('Виникла помилка: ' + error.message);
+      console.error('Error:', error);
+    });
   });
 
   // Видалити працівника
@@ -109,12 +138,14 @@
     event.preventDefault();
     const employeeId = document.getElementById('employeeIdToDelete').value;
 
-    fetch(`/admin-dashboard/employees/delete/${employeeId}`, {
+    fetch(`/admin-dashboard/employees/delete-employee/${employeeId}`, {
       method: 'DELETE'
     }).then(response => {
       if (response.ok) {
         alert('Працівника успішно видалено');
         location.reload();  // Перезавантажити сторінку після видалення
+      } else {
+        throw new Error('Не вдалося видалити працівника');
       }
     }).catch(error => console.error('Error:', error));
   });

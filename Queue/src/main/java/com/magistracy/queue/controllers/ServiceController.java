@@ -1,9 +1,9 @@
 package com.magistracy.queue.controllers;
 
 import com.magistracy.queue.entities.ServiceEntity;
-import com.magistracy.queue.repositories.ServiceEntityRepository;
+import com.magistracy.queue.entities.Workplace;
 import com.magistracy.queue.services.ServiceManagementService;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,41 +12,33 @@ import java.util.List;
 @RequestMapping("/services")
 public class ServiceController {
 
-    private final ServiceEntityRepository serviceEntityRepository;
     private final ServiceManagementService serviceManagementService;
 
-    public ServiceController(ServiceManagementService serviceManagementService, ServiceEntityRepository serviceEntityRepository) {
+    public ServiceController(ServiceManagementService serviceManagementService) {
         this.serviceManagementService = serviceManagementService;
-        this.serviceEntityRepository = serviceEntityRepository;
     }
 
+    // Отримати всі послуги
     @GetMapping("/all-services")
-    public ResponseEntity<List<ServiceEntity>> getAllServices() {
-        List<ServiceEntity> services = serviceEntityRepository.findAll();
-        System.out.println("Available services: " + services); // Додайте це для перевірки
-        return ResponseEntity.ok(services);
+    public List<ServiceEntity> getAllServices() {
+        return serviceManagementService.getAllServices();
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<ServiceEntity> addService(@RequestBody ServiceEntity service) {
-        System.out.println("Отримано запит для додавання послуги: " + service.getServiceName() + " - " + service.getServiceDescription());
-        ServiceEntity newService = serviceManagementService.addService(service);
-        System.out.println("Додана послуга: " + newService.getServiceName());
-        return ResponseEntity.ok(newService);
+    // Додати нову послугу
+    @PostMapping("/add-service")
+    public ServiceEntity addService(@RequestBody ServiceEntity serviceEntity) {
+        return serviceManagementService.addService(serviceEntity);
     }
 
     // Оновити існуючу послугу
-    @PutMapping("/update/{serviceId}")
-    public ResponseEntity<ServiceEntity> updateService(@PathVariable Long serviceId, @RequestBody ServiceEntity updatedService) {
-        ServiceEntity updated = serviceManagementService.updateService(serviceId, updatedService);
-        System.out.println("Оновлена послуга: " + updated.getServiceName());
-        return ResponseEntity.ok(updated);
+    @PutMapping("/update-service/{id}")
+    public ServiceEntity updateService(@PathVariable Long id, @RequestBody ServiceEntity serviceEntity) {
+        return serviceManagementService.updateService(id, serviceEntity);
     }
 
     // Видалити послугу
-    @DeleteMapping("/delete/{serviceId}")
-    public ResponseEntity<String> deleteService(@PathVariable Long serviceId) {
-        serviceManagementService.deleteService(serviceId);
-        return ResponseEntity.ok("Послугу успішно видалено");
+    @DeleteMapping("/delete-service/{id}")
+    public void deleteService(@PathVariable Long id) {
+        serviceManagementService.deleteService(id);
     }
 }

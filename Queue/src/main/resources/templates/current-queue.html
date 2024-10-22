@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поточна черга</title>
+</head>
+<body>
+<h1>Поточна черга</h1>
+<div id="queue"></div>
+
+<script>
+    function loadQueue() {
+        fetch('/queues/current-queue-list')
+            .then(response => response.json())
+            .then(queue => {
+                const queueDiv = document.getElementById('queue');
+                queueDiv.innerHTML = '';
+                if (queue.length === 0) {
+                    queueDiv.innerHTML = '<p>Черга пуста.</p>';
+                } else {
+                    queue.forEach(entry => {
+                        const entryElement = document.createElement('div');
+                        entryElement.innerHTML = `
+              <p>Клієнт: ${entry.client.username} - Послуга: ${entry.serviceEntity.serviceName} - Час: ${entry.appointmentTime}</p>
+            `;
+                        queueDiv.appendChild(entryElement);
+                    });
+                }
+            });
+    }
+
+    loadQueue(); // Initial load of the queue
+    setInterval(loadQueue, 5000); // Reload queue every 5 seconds
+</script>
+</body>
+</html>
