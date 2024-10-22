@@ -3,187 +3,106 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Панель працівника</title>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    #queue { margin-top: 20px; }
-  </style>
+  <title>Особистий кабінет клієнта</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Include a library for datetime picker, like flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
-<h1>Панель працівника</h1>
+<h1>Особистий кабінет</h1>
+<button onclick="window.location.href='/appointments'">Записатись на послугу</button>
 
-<!-- Створення талону -->
-<h2>Створити талон</h2>
-<form id="create-ticket-form">
-  <label for="serviceId">Виберіть послугу:</label>
-  <select id="serviceId" name="serviceId" required></select>
+<h1>Ваші записи</h1>
+<div id="appointments"></div>
 
-  <label for="workplaceId">Виберіть робоче місце:</label>
-  <select id="workplaceId" name="workplaceId" required></select>
+<!-- Modal for rescheduling -->
+<div id="rescheduleModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border: 1px solid #ccc; z-index: 1000;">
+  <h2>Перезапис</h2>
+  <label for="newAppointmentTime">Новий час:</label>
+  <input type="datetime-local" id="newAppointmentTime" required>
+  <input type="hidden" id="rescheduleAppointmentId">
+  <button onclick="submitReschedule()">Підтвердити</button>
+  <button onclick="closeModal()">Скасувати</button>
+</div>
 
-  <button type="submit">Створити талон</button>
-</form>
+<!-- Overlay to darken the background when the modal is open -->
+<div id="modalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 500;"></div>
 
-<hr>
-
-<!-- Оновлення талону -->
-<h2>Оновити талон</h2>
-<form id="update-ticket-form">
-  <label for="queueId">ID талону:</label>
-  <input type="number" id="queueId" name="queueId" required>
-
-  <label for="newServiceId">Нова послуга:</label>
-  <select id="newServiceId" name="newServiceId" required></select>
-
-  <label for="newWorkplaceId">Нове робоче місце:</label>
-  <select id="newWorkplaceId" name="newWorkplaceId" required></select>
-
-  <button type="submit">Оновити талон</button>
-</form>
-
-<hr>
-
-<!-- Видалення талону -->
-<h2>Видалити талон</h2>
-<input type="number" id="deleteQueueId" placeholder="ID талону">
-<button onclick="deleteTicket()">Видалити талон</button>
-
-<hr>
-
-<!-- Виклик клієнта -->
-<h2>Виклик клієнта</h2>
-<button onclick="callNextClient()">Викликати наступного клієнта</button>
-
-<hr>
-
-<!-- Завершення сеансу -->
-<h2>Завершити сеанс</h2>
-<input type="number" id="sessionQueueId" placeholder="ID талону">
-<button onclick="completeSession()">Завершити сеанс</button>
-
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-  // Завантаження списку послуг
-  function loadServices() {
-    fetch('/services/all-services')
-            .then(response => response.json())
-            .then(services => {
-              const serviceSelect = document.getElementById('serviceId');
-              const newServiceSelect = document.getElementById('newServiceId');
-              services.forEach(service => {
-                const option = document.createElement('option');
-                option.value = service.id;
-                option.text = service.serviceName;
-                serviceSelect.appendChild(option);
-                newServiceSelect.appendChild(option.cloneNode(true));
+  // Fetch appointments and render them
+  fetch('/appointments/client-appointments')
+          .then(response => response.json())
+          .then(appointments => {
+            const appointmentsDiv = document.getElementById('appointments');
+            if (appointments.length === 0) {
+              appointmentsDiv.innerHTML = 'У вас немає записів.';
+            } else {
+              appointments.forEach(appointment => {
+                const appointmentElement = document.createElement('div');
+                appointmentElement.innerHTML = `
+            <strong>Послуга:</strong> ${appointment.serviceEntity.serviceName}<br>
+            <strong>Час запису:</strong> ${appointment.appointmentTime}<br>
+            <button onclick="openRescheduleModal(${appointment.id})">Перезапис</button>
+            <button onclick="deleteAppointment(${appointment.id})">Видалити</button>
+            <hr>
+          `;
+                appointmentsDiv.appendChild(appointmentElement);
               });
-            })
-            .catch(error => console.error('Помилка при завантаженні послуг:', error));
+            }
+          })
+          .catch(error => {
+            console.error('There has been a problem with your fetch operation:', error);
+          });
+
+  // Open reschedule modal
+  function openRescheduleModal(appointmentId) {
+    document.getElementById('rescheduleAppointmentId').value = appointmentId;
+    document.getElementById('rescheduleModal').style.display = 'block';
+    document.getElementById('modalOverlay').style.display = 'block';
   }
 
-  // Завантаження робочих місць відповідно до вибраної послуги
-  function loadWorkplaces(serviceId) {
-    fetch(`/workplaces/by-service/${serviceId}`)
-            .then(response => response.json())
-            .then(workplaces => {
-              const workplaceSelect = document.getElementById('workplaceId');
-              workplaceSelect.innerHTML = ''; // Очищення попередніх опцій
-              workplaces.forEach(workplace => {
-                const option = document.createElement('option');
-                option.value = workplace.id;
-                option.text = `Вікно ${workplace.workplaceName}`;
-                workplaceSelect.appendChild(option);
+  // Close the modal
+  function closeModal() {
+    document.getElementById('rescheduleModal').style.display = 'none';
+    document.getElementById('modalOverlay').style.display = 'none';
+  }
+
+  // Submit rescheduled appointment
+  function submitReschedule() {
+    const appointmentId = document.getElementById('rescheduleAppointmentId').value;
+    const newTime = document.getElementById('newAppointmentTime').value;
+
+    if (newTime) {
+      fetch(`/appointments/update/${appointmentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newAppointmentTime: newTime })
+      })
+              .then(response => {
+                if (response.ok) {
+                  closeModal();
+                  location.reload(); // Refresh page to show updated appointments
+                } else {
+                  alert("Не вдалося перезаписати запис. Спробуйте ще раз.");
+                }
               });
-            })
-            .catch(error => console.error('Помилка при завантаженні робочих місць:', error));
+    }
   }
 
-  document.getElementById('serviceId').addEventListener('change', function() {
-    const serviceId = this.value;
-    loadWorkplaces(serviceId);
-  });
-
-  // Створити талон
-  document.getElementById('create-ticket-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const serviceId = document.getElementById('serviceId').value;
-    const workplaceId = document.getElementById('workplaceId').value;
-
-    fetch('/queue/add-to-queue', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ clientId: clientId, serviceId: serviceId, workplaceId: workplaceId })
+  // Delete appointment
+  function deleteAppointment(appointmentId) {
+    fetch(`/appointments/delete/${appointmentId}`, {
+      method: 'DELETE'
     })
-            .then(response => response.json())
-            .then(data => {
-              alert(`Талон №${data.id} створено для послуги ${data.serviceEntity.serviceName} на робоче місце ${data.workplace.workplaceName}`);
-              loadQueue();  // Оновлюємо чергу після створення талону
-            })
-            .catch(error => {
-              console.error('Помилка:', error);
-            });
-  });
-
-  // Оновлення талону
-  document.getElementById('update-ticket-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const queueId = document.getElementById('queueId').value;
-    const newServiceId = document.getElementById('newServiceId').value;
-    const newWorkplaceId = document.getElementById('newWorkplaceId').value;
-
-    fetch(`/queues/update-ticket/${queueId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ newServiceId, newWorkplaceId })
-    })
-            .then(response => response.json())
-            .then(data => {
-              alert(`Талон оновлено: ${data.ticketNumber}`);
-            })
-            .catch(error => console.error('Помилка:', error));
-  });
-
-  // Видалення талону
-  function deleteTicket() {
-    const queueId = document.getElementById('deleteQueueId').value;
-    fetch(`/queues/delete-ticket/${queueId}`, { method: 'DELETE' })
-            .then(response => response.text())
-            .then(data => {
-              alert(data);
-            })
-            .catch(error => console.error('Помилка:', error));
-  }
-
-  // Виклик наступного клієнта
-  function callNextClient() {
-    const workplaceId = document.getElementById('workplaceId').value; // Отримуємо ID робочого місця
-    fetch(`/queue/call-next-client/${workplaceId}`, { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-              alert(`Клієнт з талоном №${data.id} викликано на робоче місце ${data.workplace.workplaceName}`);
-              loadQueue();
-            })
-            .catch(error => {
-              console.error('Помилка:', error);
+            .then(response => {
+              if (response.ok) {
+                location.reload(); // Refresh page to show updated appointments
+              } else {
+                alert("Не вдалося видалити запис. Спробуйте ще раз.");
+              }
             });
   }
-
-  // Завершення сеансу
-  function completeSession() {
-    const queueId = document.getElementById('sessionQueueId').value;
-    fetch(`/queue/complete-session/${queueId}`, { method: 'POST' })
-            .then(response => response.text())
-            .then(data => {
-              alert(data);
-              loadQueue();  // Оновлюємо чергу після завершення сеансу
-            })
-            .catch(error => {
-              console.error('Помилка:', error);
-            });
-  }
-
-  loadServices(); // Завантаження послуг при завантаженні сторінки
 </script>
 </body>
 </html>

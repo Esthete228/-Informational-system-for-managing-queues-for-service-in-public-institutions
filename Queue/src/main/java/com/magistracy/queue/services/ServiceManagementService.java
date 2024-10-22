@@ -6,6 +6,7 @@ import com.magistracy.queue.repositories.ServiceEntityRepository;
 import com.magistracy.queue.repositories.WorkplaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,34 +15,31 @@ public class ServiceManagementService {
 
     private final ServiceEntityRepository serviceEntityRepository;
 
-    public ServiceManagementService(ServiceEntityRepository serviceEntityRepository, WorkplaceRepository workplaceRepository) {
+    public ServiceManagementService(ServiceEntityRepository serviceEntityRepository) {
         this.serviceEntityRepository = serviceEntityRepository;
     }
 
-    // Отримати всі послуги
     public List<ServiceEntity> getAllServices() {
         return serviceEntityRepository.findAll();
     }
 
-    // Додати нову послугу
+    @Transactional
     public ServiceEntity addService(ServiceEntity serviceEntity) {
         return serviceEntityRepository.save(serviceEntity);
     }
 
-    // Оновити існуючу послугу
+    @Transactional
     public ServiceEntity updateService(Long id, ServiceEntity serviceEntity) {
-        // Перш ніж оновити, потрібно перевірити, чи існує послуга
         ServiceEntity existingService = serviceEntityRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Service not found with id: " + id));
 
         existingService.setServiceName(serviceEntity.getServiceName());
         existingService.setServiceDescription(serviceEntity.getServiceDescription());
-        existingService.setWorkplaces(serviceEntity.getWorkplaces());
 
         return serviceEntityRepository.save(existingService);
     }
 
-    // Видалити послугу
+    @Transactional
     public void deleteService(Long id) {
         serviceEntityRepository.deleteById(id);
     }

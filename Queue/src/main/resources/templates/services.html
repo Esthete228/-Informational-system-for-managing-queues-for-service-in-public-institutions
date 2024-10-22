@@ -8,19 +8,11 @@
 </head>
 <body>
 <h1>Керування послугами</h1>
+
 <h2>Додати нову послугу</h2>
 <form id="addServiceForm">
   <input type="text" id="serviceName" placeholder="Назва послуги" required>
   <input type="text" id="serviceDescription" placeholder="Опис послуги" required>
-
-  <label for="assignedWorkplaces">Виберіть робочі місця:</label>
-  <select id="assignedWorkplaces" multiple required>
-    <!-- Робочі місця будуть завантажені динамічно -->
-  </select>
-
-  <button type="submit">Додати послугу</button>
-</form>
-
   <button type="submit">Додати послугу</button>
 </form>
 
@@ -31,12 +23,6 @@
   </select>
   <input type="text" id="updatedServiceName" placeholder="Нова назва послуги" required>
   <input type="text" id="updatedServiceDescription" placeholder="Новий опис послуги" required>
-
-  <label for="updatedAssignedWorkplaces">Виберіть нові робочі місця:</label>
-  <select id="updatedAssignedWorkplaces" multiple required>
-    <!-- Робочі місця будуть завантажені динамічно -->
-  </select>
-
   <button type="submit">Оновити послугу</button>
 </form>
 
@@ -53,39 +39,37 @@
   fetch('/services/all-services')
           .then(response => response.json())
           .then(services => {
+            console.log('Fetched services:', services); // Log the services array
+            if (!Array.isArray(services)) {
+              throw new Error('Expected an array');
+            }
+
             const updateSelect = document.getElementById('serviceIdToUpdate');
             const deleteSelect = document.getElementById('serviceIdToDelete');
+
+            // Clear existing options before appending new ones
+            updateSelect.innerHTML = '<option value="">Виберіть послугу</option>';
+            deleteSelect.innerHTML = '<option value="">Виберіть послугу</option>';
+
             services.forEach(service => {
               const option = document.createElement('option');
               option.value = service.id;
               option.textContent = service.serviceName;
-              updateSelect.appendChild(option);
-              deleteSelect.appendChild(option.cloneNode(true));  // Клон для іншої форми
+
+              // Append to update select
+              updateSelect.appendChild(option.cloneNode(true));
+              // Append to delete select
+              deleteSelect.appendChild(option);
             });
           })
-          .catch(error => console.error('Error:', error));
+          .catch(error => console.error('Error fetching services:', error));
 
-  // Завантаження робочих місць для додавання та оновлення
-  // Завантаження робочих місць для додавання послуги
-  fetch('/admin-dashboard/workplaces/all-workplaces')
-          .then(response => response.json())
-          .then(workplaces => {
-            const addWorkplaceSelect = document.getElementById('assignedWorkplaces');
-            workplaces.forEach(workplace => {
-              const option = document.createElement('option');
-              option.value = workplace.id;
-              option.textContent = workplace.workplaceName;
-              addWorkplaceSelect.appendChild(option);
-            });
-          });
-
-  // Додати нову послугу
+  // Додавання нової послуги
   document.getElementById('addServiceForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
     const serviceName = document.getElementById('serviceName').value;
     const serviceDescription = document.getElementById('serviceDescription').value;
-    const assignedWorkplaces = Array.from(document.getElementById('assignedWorkplaces').selectedOptions).map(option => option.value);
 
     fetch('/services/add-service', {
       method: 'POST',
@@ -94,8 +78,7 @@
       },
       body: JSON.stringify({
         serviceName: serviceName,
-        serviceDescription: serviceDescription,
-        workplaceIds: assignedWorkplaces  // Надсилаємо масив ID робочих місць
+        serviceDescription: serviceDescription
       })
     })
             .then(response => response.json())
@@ -106,14 +89,13 @@
             .catch(error => console.error('Error:', error));
   });
 
-  // Оновити існуючу послугу
+  // Оновлення існуючої послуги
   document.getElementById('updateServiceForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
     const serviceId = document.getElementById('serviceIdToUpdate').value;
     const updatedServiceName = document.getElementById('updatedServiceName').value;
     const updatedServiceDescription = document.getElementById('updatedServiceDescription').value;
-    const updatedWorkplaces = Array.from(document.getElementById('updatedAssignedWorkplaces').selectedOptions).map(option => option.value);
 
     fetch(`/services/update-service/${serviceId}`, {
       method: 'PUT',
@@ -122,14 +104,13 @@
       },
       body: JSON.stringify({
         serviceName: updatedServiceName,
-        serviceDescription: updatedServiceDescription,
-        workplaceIds: updatedWorkplaces  // Оновлюємо робочі місця
+        serviceDescription: updatedServiceDescription
       })
     })
             .then(response => response.json())
             .then(data => {
               alert('Послугу успішно оновлено: ' + data.serviceName);
-              location.reload();
+              location.reload();  // Оновити сторінку після оновлення
             })
             .catch(error => console.error('Error:', error));
   });
@@ -141,12 +122,14 @@
 
     fetch(`/services/delete-service/${serviceId}`, {
       method: 'DELETE'
-    }).then(response => {
-      if (response.ok) {
-        alert('Послугу успішно видалено');
-        location.reload();
-      }
-    }).catch(error => console.error('Error:', error));
+    })
+            .then(response => {
+              if (response.ok) {
+                alert('Послугу успішно видалено');
+                location.reload();
+              }
+            })
+            .catch(error => console.error('Error:', error));
   });
 </script>
 </body>

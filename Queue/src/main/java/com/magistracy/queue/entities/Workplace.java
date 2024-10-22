@@ -12,10 +12,6 @@ public class Workplace {
 
     private String workplaceName;
 
-    // Можливо, додати відслідковування поточного клієнта
-    @OneToOne
-    private Queue currentQueue;  // Поточний клієнт на обслуговуванні
-
     // Геттери та сеттери
     public Long getId() {
         return id;
@@ -31,13 +27,5 @@ public class Workplace {
 
     public void setWorkplaceName(String workplaceName) {
         this.workplaceName = workplaceName;
-    }
-
-    public Queue getCurrentQueue() {
-        return currentQueue;
-    }
-
-    public void setCurrentQueue(Queue currentQueue) {
-        this.currentQueue = currentQueue;
     }
 }
