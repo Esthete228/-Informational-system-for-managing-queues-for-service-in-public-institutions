@@ -20,6 +20,14 @@
     <option value="employee">Працівник</option>
     <option value="admin">Адміністратор</option>
   </select>
+
+  <!-- Додано вибір робочого місця -->
+  <label for="assignedWorkplace">Призначити робоче місце:</label>
+  <select id="assignedWorkplace" required>
+    <option value="">Виберіть робоче місце</option>
+    <!-- Динамічно завантажимо робочі місця -->
+  </select>
+
   <button type="submit">Додати працівника</button>
 </form>
 
@@ -28,6 +36,7 @@
   <select id="employeeIdToUpdate" required>
     <option value="">Виберіть працівника</option>
   </select>
+
   <input type="text" id="updatedEmployeeUsername" placeholder="Нове ім'я користувача" required>
   <input type="password" id="updatedEmployeePassword" placeholder="Новий пароль" required>
 
@@ -37,6 +46,14 @@
     <option value="employee">Працівник</option>
     <option value="admin">Адміністратор</option>
   </select>
+
+  <!-- Додано вибір робочого місця при редагуванні -->
+  <label for="updatedAssignedWorkplace">Оновити робоче місце:</label>
+  <select id="updatedAssignedWorkplace" required>
+    <option value="">Виберіть нове робоче місце</option>
+    <!-- Динамічно завантажимо робочі місця -->
+  </select>
+
   <button type="submit">Оновити працівника</button>
 </form>
 
@@ -49,33 +66,48 @@
 </form>
 
 <script>
-  // Завантажити всіх працівників для оновлення і видалення
+
+  // Завантаження всіх працівників для оновлення і видалення
   fetch('/admin-dashboard/employees/all-employees')
-          .then(response => {
-            if (!response.ok) {
-              throw new Error('Не вдалося завантажити працівників');
-            }
-            return response.json();
-          })
+          .then(response => response.json())
           .then(employees => {
             const updateSelect = document.getElementById('employeeIdToUpdate');
             const deleteSelect = document.getElementById('employeeIdToDelete');
             employees.forEach(employee => {
               const option = document.createElement('option');
               option.value = employee.id;
-              option.textContent = employee.username;
+              option.textContent = employee.username + ' (Робоче місце: ' + (employee.workplace ? employee.workplace.workplaceName : 'Не призначено') + ')';
               updateSelect.appendChild(option);
               deleteSelect.appendChild(option.cloneNode(true));  // Клон для іншої форми
             });
           })
           .catch(error => console.error('Error:', error));
+  // Завантаження всіх робочих місць для форми додавання та оновлення працівника
+  fetch('/admin-dashboard/workplaces/all-workplaces')
+          .then(response => response.json())
+          .then(workplaces => {
+            const addWorkplaceSelect = document.getElementById('assignedWorkplace');
+            const updateWorkplaceSelect = document.getElementById('updatedAssignedWorkplace');
+
+            workplaces.forEach(workplace => {
+              const option = document.createElement('option');
+              option.value = workplace.id;
+              option.textContent = workplace.workplaceName;
+
+              // Додаємо до обох списків
+              addWorkplaceSelect.appendChild(option.cloneNode(true));
+              updateWorkplaceSelect.appendChild(option);
+            });
+          })
+          .catch(error => console.error('Error fetching workplaces:', error));
 
   // Додати нового працівника
   document.getElementById('addEmployeeForm').addEventListener('submit', function(event) {
     event.preventDefault();
     const username = document.getElementById('employeeUsername').value;
     const password = document.getElementById('employeePassword').value;
-    const role = document.getElementById('employeeRole').value; // Отримання вибраної ролі
+    const role = document.getElementById('employeeRole').value;
+    const workplaceId = document.getElementById('assignedWorkplace').value; // Отримуємо ID робочого місця
 
     fetch('/admin-dashboard/employees/add-employee', {
       method: 'POST',
@@ -85,20 +117,16 @@
       body: JSON.stringify({
         username: username,
         password: password,
-        role: role
+        role: role,
+        workplaceId: workplaceId // Надсилаємо ID робочого місця
       })
-    }).then(response => {
-      if (!response.ok) {
-        throw new Error('Не вдалося додати працівника');
-      }
-      return response.json();
-    }).then(data => {
-      alert('Працівника успішно додано: ' + data.username);
-      location.reload();  // Перезавантажити сторінку після додавання
-    }).catch(error => {
-      alert('Виникла помилка: ' + error.message);
-      console.error('Error:', error);
-    });
+    })
+            .then(response => response.json())
+            .then(data => {
+              alert('Працівника успішно додано: ' + data.username);
+              location.reload();
+            })
+            .catch(error => console.error('Error:', error));
   });
 
   // Оновити існуючого працівника
@@ -107,7 +135,8 @@
     const employeeId = document.getElementById('employeeIdToUpdate').value;
     const updatedUsername = document.getElementById('updatedEmployeeUsername').value;
     const updatedPassword = document.getElementById('updatedEmployeePassword').value;
-    const updatedRole = document.getElementById('updatedEmployeeRole').value; // Отримання вибраної нової ролі
+    const updatedRole = document.getElementById('updatedEmployeeRole').value;
+    const updatedWorkplaceId = document.getElementById('updatedAssignedWorkplace').value; // Отримуємо ID робочого місця
 
     fetch(`/admin-dashboard/employees/update-employee/${employeeId}`, {
       method: 'PUT',
@@ -117,20 +146,16 @@
       body: JSON.stringify({
         username: updatedUsername,
         password: updatedPassword,
-        role: updatedRole
+        role: updatedRole,
+        workplaceId: updatedWorkplaceId // Надсилаємо новий ID робочого місця
       })
-    }).then(response => {
-      if (!response.ok) {
-        throw new Error('Не вдалося оновити працівника');
-      }
-      return response.json();
-    }).then(data => {
-      alert('Працівника успішно оновлено: ' + data.username);
-      location.reload();  // Перезавантажити сторінку після оновлення
-    }).catch(error => {
-      alert('Виникла помилка: ' + error.message);
-      console.error('Error:', error);
-    });
+    })
+            .then(response => response.json())
+            .then(data => {
+              alert('Працівника успішно оновлено: ' + data.username);
+              location.reload();
+            })
+            .catch(error => console.error('Error:', error));
   });
 
   // Видалити працівника

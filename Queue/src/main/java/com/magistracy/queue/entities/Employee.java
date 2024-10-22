@@ -13,6 +13,10 @@ public class Employee {
     private String password;
     private String role;
 
+    @ManyToOne
+    @JoinColumn(name = "workplace_id")  // Зв'язок з таблицею робочих місць
+    private Workplace workplace;
+
     public Long getId() {
         return id;
     }
@@ -43,5 +47,13 @@ public class Employee {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Workplace getWorkplace() {
+        return workplace;
+    }
+
+    public void setWorkplace(Workplace workplace) {
+        this.workplace = workplace;
     }
 }

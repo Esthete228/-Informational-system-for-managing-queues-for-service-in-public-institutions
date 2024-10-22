@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 @Entity
 public class Queue {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,6 +23,10 @@ public class Queue {
     private Workplace workplace;  // Прив'язка до робочого місця
 
     private LocalDateTime appointmentTime;
+
+    private String status;  // Статус: "очікує", "викликано", "завершено"
+
+    private int ticketNumber;  // Номер талону
 
     // Геттери та сеттери
     public Long getId() {
@@ -62,5 +67,21 @@ public class Queue {
 
     public void setAppointmentTime(LocalDateTime appointmentTime) {
         this.appointmentTime = appointmentTime;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public int getTicketNumber() {
+        return ticketNumber;
+    }
+
+    public void setTicketNumber(int ticketNumber) {
+        this.ticketNumber = ticketNumber;
     }
 }

@@ -13,8 +13,5 @@ import java.util.Optional;
 
 @Repository
 public interface QueueRepository extends JpaRepository<Queue, Long> {
-    List<Queue> findByClient(Client client); // Виправлено з "user" на "client"
-    List<Queue> findByServiceEntityOrderByAppointmentTimeAsc(ServiceEntity serviceEntity);
-    List<Queue> findByServiceEntityAndAppointmentTime(ServiceEntity service, LocalDateTime time);
-    List<Queue> findByServiceEntity(ServiceEntity serviceEntity);
+    List<Queue> findByWorkplaceId(Long workplaceId);
 }

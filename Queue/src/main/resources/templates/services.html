@@ -21,6 +21,9 @@
   <button type="submit">Додати послугу</button>
 </form>
 
+  <button type="submit">Додати послугу</button>
+</form>
+
 <h2>Оновити існуючу послугу</h2>
 <form id="updateServiceForm">
   <select id="serviceIdToUpdate" required>
@@ -63,22 +66,18 @@
           .catch(error => console.error('Error:', error));
 
   // Завантаження робочих місць для додавання та оновлення
+  // Завантаження робочих місць для додавання послуги
   fetch('/admin-dashboard/workplaces/all-workplaces')
           .then(response => response.json())
           .then(workplaces => {
             const addWorkplaceSelect = document.getElementById('assignedWorkplaces');
-            const updateWorkplaceSelect = document.getElementById('updatedAssignedWorkplaces');
-
             workplaces.forEach(workplace => {
               const option = document.createElement('option');
               option.value = workplace.id;
               option.textContent = workplace.workplaceName;
-
               addWorkplaceSelect.appendChild(option);
-              updateWorkplaceSelect.appendChild(option.cloneNode(true));  // Клон для іншої форми
             });
-          })
-          .catch(error => console.error('Error fetching workplaces:', error));
+          });
 
   // Додати нову послугу
   document.getElementById('addServiceForm').addEventListener('submit', function(event) {

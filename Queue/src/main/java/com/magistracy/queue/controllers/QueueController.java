@@ -1,49 +1,47 @@
 package com.magistracy.queue.controllers;
 
 import com.magistracy.queue.entities.Queue;
-import com.magistracy.queue.entities.Client;
-import com.magistracy.queue.repositories.QueueRepository;
-import com.magistracy.queue.repositories.ServiceEntityRepository;
-import com.magistracy.queue.repositories.ClientRepository;
-import com.magistracy.queue.repositories.WorkplaceRepository;
-import org.springframework.http.HttpStatus;
+import com.magistracy.queue.services.QueueService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/queues")
+@RequestMapping("/queue")
 public class QueueController {
 
-    private final QueueRepository queueRepository;
-    private final ServiceEntityRepository serviceEntityRepository;
-    private final ClientRepository clientRepository;
-    private final WorkplaceRepository workplaceRepository;
+    @Autowired
+    private QueueService queueService;
 
-    public QueueController(QueueRepository queueRepository, ServiceEntityRepository serviceEntityRepository, ClientRepository clientRepository, WorkplaceRepository workplaceRepository) {
-        this.queueRepository = queueRepository;
-        this.serviceEntityRepository = serviceEntityRepository;
-        this.clientRepository = clientRepository;
-        this.workplaceRepository = workplaceRepository;
+    @PostMapping("/add-to-queue")
+    public ResponseEntity<Queue> addToQueue(@RequestParam Long clientId, @RequestParam Long serviceId, @RequestParam Long workplaceId) {
+        Queue newQueue = queueService.addClientToQueue(clientId, serviceId, workplaceId);
+        return ResponseEntity.ok(newQueue);
     }
 
-    // Створення запису в черзі для користувача
-    @PostMapping("/create-queue")
-    public ResponseEntity<String> createQueueEntry(@RequestParam Long userId, @RequestParam Long serviceId, @RequestParam Long workplaceId, @RequestParam String appointmentTime) {
-        Client client = clientRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Користувача не знайдено"));
-        LocalDateTime time = LocalDateTime.parse(appointmentTime);
+    @GetMapping("/workplace/{workplaceId}")
+    public ResponseEntity<List<Queue>> getQueueByWorkplace(@PathVariable Long workplaceId) {
+        List<Queue> queueList = queueService.getQueueByWorkplace(workplaceId);
+        return ResponseEntity.ok(queueList);
+    }
 
-        Queue newQueueEntry = new Queue();
-        newQueueEntry.setClient(client);
-        newQueueEntry.setServiceEntity(serviceEntityRepository.findById(serviceId).orElseThrow(() -> new RuntimeException("Послугу не знайдено")));
-        newQueueEntry.setWorkplace(workplaceRepository.findById(workplaceId).orElseThrow(() -> new RuntimeException("Робоче місце не знайдено")));
-        newQueueEntry.setAppointmentTime(time);
+    @PostMapping("/call-next-client/{workplaceId}")
+    public ResponseEntity<Queue> callNextClient(@PathVariable Long workplaceId) {
+        Queue nextClient = queueService.callNextClient(workplaceId);
+        return ResponseEntity.ok(nextClient);
+    }
 
-        queueRepository.save(newQueueEntry);
+    @PostMapping("/transfer-client/{queueId}")
+    public ResponseEntity<String> transferClient(@PathVariable Long queueId, @RequestParam Long newWorkplaceId) {
+        queueService.transferClient(queueId, newWorkplaceId);
+        return ResponseEntity.ok("Клієнта передано на інше робоче місце");
+    }
 
-        return ResponseEntity.ok("Запис успішно створено на " + time);
+    @PostMapping("/complete-session/{queueId}")
+    public ResponseEntity<String> completeSession(@PathVariable Long queueId) {
+        queueService.completeSession(queueId);
+        return ResponseEntity.ok("Сеанс завершено");
     }
 }
