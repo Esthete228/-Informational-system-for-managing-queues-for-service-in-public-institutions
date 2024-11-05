@@ -142,17 +142,29 @@
 
 
     async function populateCurrentQueue() {
-      const workplaceId = document.getElementById("workplaceId").value;
-      if (!workplaceId) return; // Якщо workplaceId не вибрано, виходимо
+      // Отримати workplaceId з сесії
+      const response = await fetch('/current-workplace');
+      if (!response.ok) {
+        console.error("Failed to load workplace ID.");
+        return; // Вийти, якщо запит не вдалий
+      }
+      const workplaceId = await response.json();
+      console.log("Current Workplace ID:", workplaceId); // Логування workplace ID
 
+      if (!workplaceId) {
+        console.error("Workplace ID is undefined. Cannot load the queue.");
+        return; // Вийти з функції, якщо workplaceId не визначений
+      }
+
+      // Використати workplaceId для отримання поточної черги
       try {
-        const response = await fetch(`/queues/current-queue/${workplaceId}`);
-        if (!response.ok) {
+        const queueResponse = await fetch(`/queues/current-queue/${workplaceId}`);
+        if (!queueResponse.ok) {
           throw new Error("Failed to load queue data.");
         }
 
-        const queueData = await response.json();
-        console.log("Queue data:", queueData); // Log fetched data for debugging
+        const queueData = await queueResponse.json();
+        console.log("Queue data:", queueData); // Логування отриманих даних для налагодження
         currentQueueDiv.innerHTML = "";
 
         const queueSelects = [
@@ -162,7 +174,7 @@
           document.getElementById("completeQueueId"),
         ];
 
-        // Clear previous options in the selects
+        // Очистити попередні опції у селектах
         queueSelects.forEach(select => {
           select.innerHTML = '<option value="">Оберіть талон</option>';
         });
@@ -197,13 +209,13 @@
     createTicketForm.addEventListener("submit", async function(event) {
       event.preventDefault();
       const serviceId = document.getElementById("serviceId").value;
-      const workplaceId = document.getElementById("workplaceId").value;
+      const workplaceId = document.getElementById("workplaceId").value; // Використовуємо значення з випадаючого списку
 
       try {
         const response = await fetch('/queues/create-ticket', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ serviceId, workplaceId })
+          body: JSON.stringify({ serviceId, workplaceId }) // Передаємо обране значення
         });
 
         if (response.ok) {
@@ -222,13 +234,13 @@
       event.preventDefault();
       const queueId = document.getElementById("queueId").value;
       const newServiceId = document.getElementById("newServiceId").value;
-      const newWorkplaceId = document.getElementById("newWorkplaceId").value;
+      const newWorkplaceId = document.getElementById("newWorkplaceId").value; // Використовуємо значення з випадаючого списку
 
       try {
         const response = await fetch(`/queues/update-ticket/${queueId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ serviceId: newServiceId, workplaceId: newWorkplaceId })
+          body: JSON.stringify({ serviceId: newServiceId, workplaceId: newWorkplaceId }) // Передаємо обране значення
         });
 
         if (response.ok) {
@@ -246,10 +258,13 @@
     deleteTicketForm.addEventListener("submit", async function(event) {
       event.preventDefault();
       const queueId = document.getElementById("deleteQueueId").value;
+      const workplaceId = document.getElementById("workplaceId").value; // Отримуємо workplaceId з випадаючого списку
 
       try {
         const response = await fetch(`/queues/delete-ticket/${queueId}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workplaceId }) // Передаємо обране значення
         });
 
         if (response.ok) {
