@@ -9,8 +9,10 @@
 <body>
 <h1>Дошка працівника</h1>
 
-<div id="notification" style="display: none;"></div> <!-- Notification area -->
+<!-- Notification area -->
+<div id="notification" style="display: none;"></div>
 
+<!-- Form to create a ticket -->
 <h2>Створити талон</h2>
 <form id="create-ticket-form">
   <label for="serviceId">Оберіть послугу:</label>
@@ -22,6 +24,7 @@
   <button type="submit">Створити талон</button>
 </form>
 
+<!-- Form to update a ticket -->
 <h2>Оновити талон</h2>
 <form id="update-ticket-form">
   <label for="queueId">Оберіть талон:</label>
@@ -36,6 +39,7 @@
   <button type="submit">Оновити талон</button>
 </form>
 
+<!-- Form to delete a ticket -->
 <h2>Видалити талон</h2>
 <form id="delete-ticket-form">
   <label for="deleteQueueId">Оберіть талон:</label>
@@ -43,32 +47,30 @@
   <button type="submit">Видалити талон</button>
 </form>
 
+<!-- Current queue section -->
 <h2>Поточна черга</h2>
 <div id="current-queue"></div>
 
+<!-- Button to call next client -->
 <h2>Викликати клієнта</h2>
 <button id="call-next-client">Викликати наступного клієнта</button>
 
+<!-- Current client section -->
 <h2>Клієнт, що обслуговується:</h2>
 <div id="current-client"></div>
 
+<!-- Form to transfer a client -->
 <h2>Передати клієнта</h2>
 <form id="transfer-client-form">
-  <label for="transferQueueId">Оберіть талон:</label>
-  <select id="transferQueueId" name="transferQueueId" required></select>
-
   <label for="transferWorkplaceId">Оберіть нове робоче місце:</label>
   <select id="transferWorkplaceId" name="transferWorkplaceId" required></select>
 
   <button type="submit">Передати клієнта</button>
 </form>
 
+<!-- Button to complete a session -->
 <h2>Завершити сеанс</h2>
-<form id="complete-session-form">
-  <label for="completeQueueId">Оберіть талон:</label>
-  <select id="completeQueueId" name="completeQueueId" required></select>
-  <button type="submit">Завершити сеанс</button>
-</form>
+<button id="complete-session-button">Завершити сеанс</button>
 
 <script>
   document.addEventListener("DOMContentLoaded", function() {
@@ -77,31 +79,34 @@
       update: document.getElementById("update-ticket-form"),
       delete: document.getElementById("delete-ticket-form"),
       transfer: document.getElementById("transfer-client-form"),
-      complete: document.getElementById("complete-session-form"),
     };
     const currentQueueDiv = document.getElementById("current-queue");
     const currentClientDiv = document.getElementById("current-client");
     const notificationDiv = document.getElementById("notification");
 
+    // Populate dropdowns and update queue at intervals
     populateDropdowns();
     populateCurrentQueue();
-    populateCurrentClient(); // Виклик функції для заповнення поточного клієнта
+    populateCurrentClient();
     setInterval(loadQueue, 5000);
     setInterval(populateCurrentQueue, 5000);
-    setInterval(populateCurrentClient, 5000); // Оновлення поточного клієнта
+    setInterval(populateCurrentClient, 5000);
 
+    // Function to fetch current workplace ID
     async function fetchWorkplaceId() {
       const response = await fetch('/current-workplace');
       if (!response.ok) throw new Error("Failed to load workplace ID.");
       return await response.json();
     }
 
+    // Function to fetch JSON data from URL
     async function fetchJSON(url) {
       const response = await fetch(url);
       if (!response.ok) throw new Error("Network response was not ok");
       return await response.json();
     }
 
+    // Populate dropdowns for services and workplaces
     async function populateDropdowns() {
       try {
         const [services, workplaces] = await Promise.all([
@@ -109,6 +114,7 @@
           fetchJSON('/workplaces/all-workplaces'),
         ]);
 
+        // Populate service and workplace dropdowns
         const serviceSelects = [document.getElementById('serviceId'), document.getElementById('newServiceId')];
         const workplaceSelects = [document.getElementById('workplaceId'), document.getElementById('newWorkplaceId'), document.getElementById('transferWorkplaceId')];
 
@@ -126,32 +132,27 @@
       }
     }
 
+    // Load the current queue data
     async function loadQueue() {
       try {
         const workplaceId = await fetchWorkplaceId();
-        console.log("Current Workplace ID:", workplaceId);
         const queueData = await fetchJSON(`/queues/current-queue/${workplaceId}`);
         console.log("Queue data:", queueData);
-        // Обробка queueData...
       } catch (error) {
         console.error('Error loading queue:', error);
       }
     }
 
+    // Populate the current queue
     async function populateCurrentQueue() {
       try {
         const workplaceId = await fetchWorkplaceId();
-        console.log("Current Workplace ID:", workplaceId);
-
         const queueData = await fetchJSON(`/queues/current-queue/${workplaceId}`);
-        console.log("Queue data:", queueData);
         currentQueueDiv.innerHTML = "";
 
         const queueSelects = [
           document.getElementById("queueId"),
           document.getElementById("deleteQueueId"),
-          document.getElementById("transferQueueId"),
-          document.getElementById("completeQueueId"),
         ];
 
         queueSelects.forEach(select => {
@@ -177,22 +178,25 @@
       }
     }
 
+    // Populate current client data
     async function populateCurrentClient() {
       try {
         const workplaceId = await fetchWorkplaceId();
-        const currentClientData = await fetchJSON(`/queues/current-client/${workplaceId}`); // Виклик API для отримання поточного клієнта
-        console.log("Current Client data:", currentClientData);
+        const currentClientData = await fetchJSON(`/queues/current-client/${workplaceId}`);
 
         if (currentClientData) {
           currentClientDiv.innerText = `Клієнт: ${currentClientData.ticketNumber}, Послуга: ${currentClientData.serviceEntity.name}`;
+          currentClientDiv.dataset.currentTicketId = currentClientData.id;
         } else {
           currentClientDiv.innerText = "Клієнт не обслуговується.";
+          delete currentClientDiv.dataset.currentTicketId;
         }
       } catch (error) {
         console.error("Error loading current client:", error);
       }
     }
 
+    // Show notifications on success or error
     function showNotification(message) {
       notificationDiv.innerText = message;
       notificationDiv.style.display = 'block';
@@ -201,19 +205,20 @@
       }, 3000);
     }
 
+    // Handle form submissions
     async function handleSubmit(event, url, method, bodyData, successMessage, errorMessage) {
       event.preventDefault();
       try {
         const response = await fetch(url, {
           method: method,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(bodyData)
+          body: JSON.stringify(bodyData),
         });
 
         if (response.ok) {
           showNotification(successMessage);
           await populateCurrentQueue();
-          await populateCurrentClient(); // Оновлення поточного клієнта після зміни черги
+          await populateCurrentClient();
         } else {
           showNotification(errorMessage);
         }
@@ -223,6 +228,7 @@
       }
     }
 
+    // Add event listeners for form submissions and button clicks
     forms.create.addEventListener("submit", function(event) {
       const serviceId = document.getElementById("serviceId").value;
       const workplaceId = document.getElementById("workplaceId").value;
@@ -241,6 +247,7 @@
       handleSubmit(event, `/queues/delete-ticket/${queueId}`, 'DELETE', { workplaceId: document.getElementById("workplaceId").value }, "Талон успішно видалено!", "Не вдалося видалити талон.");
     });
 
+    // Call next client button click
     document.getElementById("call-next-client").addEventListener("click", async function() {
       try {
         const workplaceId = await fetchWorkplaceId();
@@ -251,7 +258,7 @@
           document.getElementById("current-client").innerText = `Клієнт: ${client.ticketNumber}`;
           showNotification("Клієнта викликано!");
           await populateCurrentQueue();
-          await populateCurrentClient(); // Оновлення інформації про поточного клієнта
+          await populateCurrentClient();
         } else {
           showNotification("Не вдалося викликати клієнта.");
         }
@@ -261,22 +268,34 @@
       }
     });
 
-    forms.transfer.addEventListener("submit", function(event) {
-      const queueId = document.getElementById("transferQueueId").value;
+    // Transfer client form submit
+    forms.transfer.addEventListener("submit", async function(event) {
       const transferWorkplaceId = document.getElementById("transferWorkplaceId").value;
+      const currentTicketId = currentClientDiv.dataset.currentTicketId;
 
-      handleSubmit(event, `/queues/transfer-client/${queueId}`, 'PUT', {
-        fromWorkplaceId: fetchWorkplaceId(),
-        toWorkplaceId: transferWorkplaceId
-      }, "Клієнта успішно передано!", "Не вдалося передати клієнта.");
+      if (currentTicketId) {
+        await handleSubmit(event, `/queues/transfer-client/${currentTicketId}`, 'PUT', {
+          fromWorkplaceId: await fetchWorkplaceId(),
+          toWorkplaceId: transferWorkplaceId,
+        }, "Клієнта успішно передано!", "Не вдалося передати клієнта.");
+      } else {
+        showNotification("Немає клієнта для передачі.");
+      }
     });
 
-    forms.complete.addEventListener("submit", function(event) {
-      const queueId = document.getElementById("completeQueueId").value;
+    // Complete session button click
+    document.getElementById("complete-session-button").addEventListener("click", async function(event) {
+      event.preventDefault();
 
-      handleSubmit(event, `/queues/complete-session/${queueId}`, 'PUT', {
-        workplaceId: fetchWorkplaceId()
-      }, "Сеанс успішно завершено!", "Не вдалося завершити сеанс.");
+      const currentTicketId = currentClientDiv.dataset.currentTicketId;
+
+      if (currentTicketId) {
+        await handleSubmit(event, `/queues/complete-session/${currentTicketId}`, 'PUT', {
+          workplaceId: await fetchWorkplaceId(),
+        }, "Сеанс успішно завершено!", "Не вдалося завершити сеанс.");
+      } else {
+        showNotification("Немає клієнта для завершення сеансу.");
+      }
     });
   });
 </script>

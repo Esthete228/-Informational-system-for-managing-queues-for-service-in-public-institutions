@@ -61,25 +61,22 @@ public class QueueController {
     }
 
     @PutMapping("/transfer-client/{queueId}")
-    public ResponseEntity<?> transferClient(
-            @PathVariable Long queueId,
-            @RequestBody Map<String, Long> transferRequest) {
-
-        Long fromWorkplaceId = transferRequest.get("fromWorkplaceId");
-        Long toWorkplaceId = transferRequest.get("toWorkplaceId");
-
-        Queue updatedQueue = queueService.transferClient(queueId, toWorkplaceId);
-        return ResponseEntity.ok(updatedQueue);
+    public ResponseEntity<?> transferClient(@PathVariable Long queueId,
+                                            @RequestBody Map<String, Long> payload) {
+        Long toWorkplaceId = payload.get("toWorkplaceId");
+        try {
+            Queue updatedQueue = queueService.transferClient(queueId, toWorkplaceId);
+            return ResponseEntity.ok(updatedQueue);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PutMapping("/complete-session/{queueId}")
-    public ResponseEntity<?> completeSession(
-            @PathVariable Long queueId,
-            @RequestBody Map<String, Long> completeSessionRequest) {
-
-        Long workplaceId = completeSessionRequest.get("workplaceId");
-
+    public ResponseEntity<?> completeSession(@PathVariable Long queueId) {
+        // Тепер параметр буде використовуватися
         try {
+            // Викликаємо метод завершення сеансу
             queueService.completeSession(queueId);
             return ResponseEntity.ok("Сесію завершено успішно");
         } catch (RuntimeException e) {

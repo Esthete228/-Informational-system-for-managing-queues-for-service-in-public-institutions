@@ -105,11 +105,14 @@ public class QueueService {
     }
 
     public void completeSession(Long queueId) {
-        if (queueRepository.existsById(queueId)) {
-            queueRepository.deleteById(queueId); // Видаляємо талон при завершенні сеансу
-        } else {
-            throw new RuntimeException("Талон не знайдено");
+        Queue queue = queueRepository.findById(queueId)
+                .orElseThrow(() -> new RuntimeException("Талон не знайдено"));
+
+        if (queue.getStatus() != Queue.QueueStatus.IN_PROGRESS) {
+            throw new RuntimeException("Можна завершувати тільки сесії зі статусом IN_PROGRESS");
         }
+
+        queueRepository.deleteById(queueId); // Видаляємо талон при завершенні сеансу
     }
 
     private int generateTicketNumber() {
