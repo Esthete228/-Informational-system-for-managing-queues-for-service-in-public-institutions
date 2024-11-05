@@ -50,7 +50,7 @@
 <button id="call-next-client">Викликати наступного клієнта</button>
 
 <h2>Клієнт, що обслуговується:</h2>
-<div id="current-client"></div> <!-- Active client area -->
+<div id="current-client"></div>
 
 <h2>Передати клієнта</h2>
 <form id="transfer-client-form">
@@ -72,19 +72,41 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", function() {
-    const createTicketForm = document.getElementById("create-ticket-form");
-    const updateTicketForm = document.getElementById("update-ticket-form");
-    const deleteTicketForm = document.getElementById("delete-ticket-form");
-    const transferClientForm = document.getElementById("transfer-client-form");
-    const completeSessionForm = document.getElementById("complete-session-form");
+    const forms = {
+      create: document.getElementById("create-ticket-form"),
+      update: document.getElementById("update-ticket-form"),
+      delete: document.getElementById("delete-ticket-form"),
+      transfer: document.getElementById("transfer-client-form"),
+      complete: document.getElementById("complete-session-form"),
+    };
     const currentQueueDiv = document.getElementById("current-queue");
+    const currentClientDiv = document.getElementById("current-client");
     const notificationDiv = document.getElementById("notification");
+
+    populateDropdowns();
+    populateCurrentQueue();
+    populateCurrentClient(); // Виклик функції для заповнення поточного клієнта
+    setInterval(loadQueue, 5000);
+    setInterval(populateCurrentQueue, 5000);
+    setInterval(populateCurrentClient, 5000); // Оновлення поточного клієнта
+
+    async function fetchWorkplaceId() {
+      const response = await fetch('/current-workplace');
+      if (!response.ok) throw new Error("Failed to load workplace ID.");
+      return await response.json();
+    }
+
+    async function fetchJSON(url) {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Network response was not ok");
+      return await response.json();
+    }
 
     async function populateDropdowns() {
       try {
         const [services, workplaces] = await Promise.all([
-          fetch('/services/all-services').then(res => res.json()),
-          fetch('/workplaces/all-workplaces').then(res => res.json()),
+          fetchJSON('/services/all-services'),
+          fetchJSON('/workplaces/all-workplaces'),
         ]);
 
         const serviceSelects = [document.getElementById('serviceId'), document.getElementById('newServiceId')];
@@ -92,18 +114,12 @@
 
         serviceSelects.forEach(select => {
           select.innerHTML = '<option value="">Оберіть послугу</option>';
-          services.forEach(service => {
-            const option = new Option(service.serviceName, service.id);
-            select.appendChild(option);
-          });
+          services.forEach(service => select.appendChild(new Option(service.serviceName, service.id)));
         });
 
         workplaceSelects.forEach(select => {
           select.innerHTML = '<option value="">Оберіть робоче місце</option>';
-          workplaces.forEach(workplace => {
-            const option = new Option(workplace.workplaceName, workplace.id);
-            select.appendChild(option);
-          });
+          workplaces.forEach(workplace => select.appendChild(new Option(workplace.workplaceName, workplace.id)));
         });
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -111,60 +127,24 @@
     }
 
     async function loadQueue() {
-      // Fetch the current workplace ID from the session
-      const response = await fetch('/current-workplace');
-      if (!response.ok) {
-        console.error("Failed to load workplace ID.");
-        return; // Exit if the fetch fails
+      try {
+        const workplaceId = await fetchWorkplaceId();
+        console.log("Current Workplace ID:", workplaceId);
+        const queueData = await fetchJSON(`/queues/current-queue/${workplaceId}`);
+        console.log("Queue data:", queueData);
+        // Обробка queueData...
+      } catch (error) {
+        console.error('Error loading queue:', error);
       }
-      const workplaceId = await response.json();
-      console.log("Current Workplace ID:", workplaceId); // Log the workplace ID
-
-      if (!workplaceId) {
-        console.error("Workplace ID is undefined. Cannot load the queue.");
-        return; // Exit the function if workplaceId is not defined
-      }
-
-      fetch(`/queues/current-queue/${workplaceId}`)
-              .then(response => {
-                if (!response.ok) {
-                  throw new Error("Network response was not ok");
-                }
-                return response.json();
-              })
-              .then(data => {
-                console.log("Queue data:", data); // Log the fetched data
-              })
-              .catch(error => {
-                console.error('Error loading queue:', error);
-              });
     }
 
-
     async function populateCurrentQueue() {
-      // Отримати workplaceId з сесії
-      const response = await fetch('/current-workplace');
-      if (!response.ok) {
-        console.error("Failed to load workplace ID.");
-        return; // Вийти, якщо запит не вдалий
-      }
-      const workplaceId = await response.json();
-      console.log("Current Workplace ID:", workplaceId); // Логування workplace ID
-
-      if (!workplaceId) {
-        console.error("Workplace ID is undefined. Cannot load the queue.");
-        return; // Вийти з функції, якщо workplaceId не визначений
-      }
-
-      // Використати workplaceId для отримання поточної черги
       try {
-        const queueResponse = await fetch(`/queues/current-queue/${workplaceId}`);
-        if (!queueResponse.ok) {
-          throw new Error("Failed to load queue data.");
-        }
+        const workplaceId = await fetchWorkplaceId();
+        console.log("Current Workplace ID:", workplaceId);
 
-        const queueData = await queueResponse.json();
-        console.log("Queue data:", queueData); // Логування отриманих даних для налагодження
+        const queueData = await fetchJSON(`/queues/current-queue/${workplaceId}`);
+        console.log("Queue data:", queueData);
         currentQueueDiv.innerHTML = "";
 
         const queueSelects = [
@@ -174,12 +154,11 @@
           document.getElementById("completeQueueId"),
         ];
 
-        // Очистити попередні опції у селектах
         queueSelects.forEach(select => {
           select.innerHTML = '<option value="">Оберіть талон</option>';
         });
 
-        if (queueData && queueData.length > 0) {
+        if (queueData.length > 0) {
           queueData.forEach(ticket => {
             const div = document.createElement("div");
             div.innerText = `Талон: ${ticket.ticketNumber}, Послуга: ${ticket.serviceEntity.name}, Статус: ${ticket.status}`;
@@ -198,100 +177,81 @@
       }
     }
 
+    async function populateCurrentClient() {
+      try {
+        const workplaceId = await fetchWorkplaceId();
+        const currentClientData = await fetchJSON(`/queues/current-client/${workplaceId}`); // Виклик API для отримання поточного клієнта
+        console.log("Current Client data:", currentClientData);
+
+        if (currentClientData) {
+          currentClientDiv.innerText = `Клієнт: ${currentClientData.ticketNumber}, Послуга: ${currentClientData.serviceEntity.name}`;
+        } else {
+          currentClientDiv.innerText = "Клієнт не обслуговується.";
+        }
+      } catch (error) {
+        console.error("Error loading current client:", error);
+      }
+    }
+
     function showNotification(message) {
       notificationDiv.innerText = message;
       notificationDiv.style.display = 'block';
       setTimeout(() => {
         notificationDiv.style.display = 'none';
-      }, 3000); // Hide after 3 seconds
+      }, 3000);
     }
 
-    createTicketForm.addEventListener("submit", async function(event) {
+    async function handleSubmit(event, url, method, bodyData, successMessage, errorMessage) {
       event.preventDefault();
-      const serviceId = document.getElementById("serviceId").value;
-      const workplaceId = document.getElementById("workplaceId").value; // Використовуємо значення з випадаючого списку
-
       try {
-        const response = await fetch('/queues/create-ticket', {
-          method: 'POST',
+        const response = await fetch(url, {
+          method: method,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ serviceId, workplaceId }) // Передаємо обране значення
+          body: JSON.stringify(bodyData)
         });
 
         if (response.ok) {
-          showNotification("Талон успішно створено!");
-          await populateCurrentQueue(); // Оновлення черги
+          showNotification(successMessage);
+          await populateCurrentQueue();
+          await populateCurrentClient(); // Оновлення поточного клієнта після зміни черги
         } else {
-          showNotification("Не вдалося створити талон.");
+          showNotification(errorMessage);
         }
       } catch (error) {
         console.error('Error:', error);
-        showNotification("Сталася помилка при створенні талону.");
+        showNotification("Сталася помилка.");
       }
+    }
+
+    forms.create.addEventListener("submit", function(event) {
+      const serviceId = document.getElementById("serviceId").value;
+      const workplaceId = document.getElementById("workplaceId").value;
+      handleSubmit(event, '/queues/create-ticket', 'POST', { serviceId, workplaceId }, "Талон успішно створено!", "Не вдалося створити талон.");
     });
 
-    updateTicketForm.addEventListener("submit", async function(event) {
-      event.preventDefault();
+    forms.update.addEventListener("submit", function(event) {
       const queueId = document.getElementById("queueId").value;
       const newServiceId = document.getElementById("newServiceId").value;
-      const newWorkplaceId = document.getElementById("newWorkplaceId").value; // Використовуємо значення з випадаючого списку
-
-      try {
-        const response = await fetch(`/queues/update-ticket/${queueId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ serviceId: newServiceId, workplaceId: newWorkplaceId }) // Передаємо обране значення
-        });
-
-        if (response.ok) {
-          showNotification("Талон успішно оновлено!");
-          await populateCurrentQueue();
-        } else {
-          showNotification("Не вдалося оновити талон.");
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        showNotification("Сталася помилка при оновленні талону.");
-      }
+      const newWorkplaceId = document.getElementById("newWorkplaceId").value;
+      handleSubmit(event, `/queues/update-ticket/${queueId}`, 'PUT', { serviceId: newServiceId, workplaceId: newWorkplaceId }, "Талон успішно оновлено!", "Не вдалося оновити талон.");
     });
 
-    deleteTicketForm.addEventListener("submit", async function(event) {
-      event.preventDefault();
+    forms.delete.addEventListener("submit", function(event) {
       const queueId = document.getElementById("deleteQueueId").value;
-      const workplaceId = document.getElementById("workplaceId").value; // Отримуємо workplaceId з випадаючого списку
-
-      try {
-        const response = await fetch(`/queues/delete-ticket/${queueId}`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ workplaceId }) // Передаємо обране значення
-        });
-
-        if (response.ok) {
-          showNotification("Талон успішно видалено!");
-          await populateCurrentQueue();
-        } else {
-          showNotification("Не вдалося видалити талон.");
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        showNotification("Сталася помилка при видаленні талону.");
-      }
+      handleSubmit(event, `/queues/delete-ticket/${queueId}`, 'DELETE', { workplaceId: document.getElementById("workplaceId").value }, "Талон успішно видалено!", "Не вдалося видалити талон.");
     });
 
     document.getElementById("call-next-client").addEventListener("click", async function() {
-      const workplaceId = document.getElementById("workplaceId").value;
-
       try {
-        const response = await fetch(`/queues/call-next-client/${workplaceId}`, {
-          method: 'POST'
-        });
+        const workplaceId = await fetchWorkplaceId();
+        const response = await fetch(`/queues/call-next-client/${workplaceId}`, { method: 'POST' });
 
         if (response.ok) {
           const client = await response.json();
           document.getElementById("current-client").innerText = `Клієнт: ${client.ticketNumber}`;
           showNotification("Клієнта викликано!");
           await populateCurrentQueue();
+          await populateCurrentClient(); // Оновлення інформації про поточного клієнта
         } else {
           showNotification("Не вдалося викликати клієнта.");
         }
@@ -301,59 +261,23 @@
       }
     });
 
-    transferClientForm.addEventListener("submit", async function(event) {
-      event.preventDefault();
+    forms.transfer.addEventListener("submit", function(event) {
       const queueId = document.getElementById("transferQueueId").value;
       const transferWorkplaceId = document.getElementById("transferWorkplaceId").value;
 
-      try {
-        const response = await fetch(`/queues/transfer-client/${queueId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ workplaceId: transferWorkplaceId })
-        });
-
-        if (response.ok) {
-          showNotification("Клієнта успішно передано!");
-          await populateCurrentQueue();
-        } else {
-          showNotification("Не вдалося передати клієнта.");
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        showNotification("Сталася помилка при передачі клієнта.");
-      }
+      handleSubmit(event, `/queues/transfer-client/${queueId}`, 'PUT', {
+        fromWorkplaceId: fetchWorkplaceId(),
+        toWorkplaceId: transferWorkplaceId
+      }, "Клієнта успішно передано!", "Не вдалося передати клієнта.");
     });
 
-    completeSessionForm.addEventListener("submit", async function(event) {
-      event.preventDefault();
+    forms.complete.addEventListener("submit", function(event) {
       const queueId = document.getElementById("completeQueueId").value;
 
-      try {
-        const response = await fetch(`/queues/complete-session/${queueId}`, {
-          method: 'PUT'
-        });
-
-        if (response.ok) {
-          showNotification("Сеанс успішно завершено!");
-          await populateCurrentQueue();
-          document.getElementById("current-client").innerText = "";
-        } else {
-          showNotification("Не вдалося завершити сеанс.");
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        showNotification("Сталася помилка при завершенні сеансу.");
-      }
+      handleSubmit(event, `/queues/complete-session/${queueId}`, 'PUT', {
+        workplaceId: fetchWorkplaceId()
+      }, "Сеанс успішно завершено!", "Не вдалося завершити сеанс.");
     });
-
-    document.getElementById("workplaceId").addEventListener("change", populateCurrentQueue);
-
-    populateDropdowns();
-    populateCurrentQueue();
-    // Оновлюйте поточну чергу кожні 5 секунд
-    setInterval(loadQueue, 5000);
-    setInterval(populateCurrentQueue, 5000);
   });
 </script>
 </body>

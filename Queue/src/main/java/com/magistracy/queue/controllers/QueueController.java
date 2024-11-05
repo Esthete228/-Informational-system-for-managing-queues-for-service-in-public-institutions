@@ -60,14 +60,25 @@ public class QueueController {
         return ResponseEntity.ok(nextClient);
     }
 
-    @PostMapping("/transfer-ticket/{queueId}")
-    public ResponseEntity<Queue> transferClient(@PathVariable Long queueId, @RequestParam Long newWorkplaceId) {
-        Queue updatedQueue = queueService.transferClient(queueId, newWorkplaceId);
+    @PutMapping("/transfer-client/{queueId}")
+    public ResponseEntity<?> transferClient(
+            @PathVariable Long queueId,
+            @RequestBody Map<String, Long> transferRequest) {
+
+        Long fromWorkplaceId = transferRequest.get("fromWorkplaceId");
+        Long toWorkplaceId = transferRequest.get("toWorkplaceId");
+
+        Queue updatedQueue = queueService.transferClient(queueId, toWorkplaceId);
         return ResponseEntity.ok(updatedQueue);
     }
 
-    @PostMapping("/complete-session/{queueId}")
-    public ResponseEntity<String> completeSession(@PathVariable Long queueId) {
+    @PutMapping("/complete-session/{queueId}")
+    public ResponseEntity<?> completeSession(
+            @PathVariable Long queueId,
+            @RequestBody Map<String, Long> completeSessionRequest) {
+
+        Long workplaceId = completeSessionRequest.get("workplaceId");
+
         try {
             queueService.completeSession(queueId);
             return ResponseEntity.ok("Сесію завершено успішно");
