@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/admin-dashboard/employees")
+@RequestMapping("/employees")
 public class EmployeeController {
 
     private final EmployeeRepository employeeRepository;

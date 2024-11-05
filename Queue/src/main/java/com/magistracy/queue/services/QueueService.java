@@ -1,75 +1,98 @@
+// QueueService.java
+
 package com.magistracy.queue.services;
 
-import com.magistracy.queue.entities.Client;
 import com.magistracy.queue.entities.Queue;
 import com.magistracy.queue.entities.ServiceEntity;
 import com.magistracy.queue.entities.Workplace;
-import com.magistracy.queue.repositories.ClientRepository;
 import com.magistracy.queue.repositories.QueueRepository;
 import com.magistracy.queue.repositories.ServiceEntityRepository;
 import com.magistracy.queue.repositories.WorkplaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class QueueService {
 
     private final QueueRepository queueRepository;
-
-    private final ClientRepository clientRepository;
-
     private final ServiceEntityRepository serviceEntityRepository;
-
     private final WorkplaceRepository workplaceRepository;
+    private int ticketNumberCounter = 0;
 
-    public QueueService(QueueRepository queueRepository, ClientRepository clientRepository, ServiceEntityRepository serviceEntityRepository, WorkplaceRepository workplaceRepository) {
+    @Autowired
+    public QueueService(QueueRepository queueRepository,
+                        ServiceEntityRepository serviceEntityRepository, WorkplaceRepository workplaceRepository) {
         this.queueRepository = queueRepository;
-        this.clientRepository = clientRepository;
         this.serviceEntityRepository = serviceEntityRepository;
         this.workplaceRepository = workplaceRepository;
     }
 
-    // Метод додавання клієнта до черги
-    public Queue addClientToQueue(Long clientId, Long serviceId, Long workplaceId) {
-        // Знаходимо клієнта, послугу та робоче місце
-        Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new RuntimeException("Клієнта не знайдено"));
-
+    public Queue createTicket(Long serviceId, Long workplaceId) {
         ServiceEntity serviceEntity = serviceEntityRepository.findById(serviceId)
-                .orElseThrow(() -> new RuntimeException("Послугу не знайдено"));
-
+                .orElseThrow(() -> new RuntimeException("Послуга не знайдена"));
         Workplace workplace = workplaceRepository.findById(workplaceId)
                 .orElseThrow(() -> new RuntimeException("Робоче місце не знайдено"));
 
-        // Створюємо новий запис у черзі
         Queue queue = new Queue();
-        queue.setClient(client);
         queue.setServiceEntity(serviceEntity);
         queue.setWorkplace(workplace);
-        queue.setAppointmentTime(LocalDateTime.now()); // Час додавання до черги
+        queue.setTicketNumber(generateTicketNumber());
+        queue.setStatus(Queue.QueueStatus.ACTIVE);
 
         return queueRepository.save(queue);
     }
 
-    // Отримати чергу для робочого місця
-    public List<Queue> getQueueByWorkplace(Long workplaceId) {
-        return queueRepository.findByWorkplaceId(workplaceId);
+    public List<Queue> getCurrentQueue(Long workplaceId) {
+        // Fetch only ACTIVE status tickets for the specified workplace
+        return queueRepository.findByWorkplaceIdAndStatus(workplaceId, Queue.QueueStatus.ACTIVE);
     }
 
-    // Виклик наступного клієнта
+    public Queue getCurrentClient(Long workplaceId) {
+        // Fetch the current client in IN_PROGRESS status for the specified workplace
+        return queueRepository.findFirstByWorkplaceIdAndStatus(workplaceId, Queue.QueueStatus.IN_PROGRESS)
+                .orElse(null);
+    }
+
     public Queue callNextClient(Long workplaceId) {
-        List<Queue> queueList = getQueueByWorkplace(workplaceId);
-        if (queueList.isEmpty()) {
-            throw new RuntimeException("Немає клієнтів у черзі");
+        Queue currentClient = queueRepository.findFirstByWorkplaceIdAndStatus(workplaceId, Queue.QueueStatus.ACTIVE)
+                .orElse(null);
+        if (currentClient != null) {
+            currentClient.setStatus(Queue.QueueStatus.IN_PROGRESS);
+            return queueRepository.save(currentClient);
         }
-        return queueList.get(0);  // Перший клієнт у черзі
+        throw new RuntimeException("Клієнтів немає в черзі");
     }
 
-    // Передати клієнта на інше робоче місце
-    public void transferClient(Long queueId, Long newWorkplaceId) {
+    public Queue updateTicket(Long ticketId, Long newServiceId, Long newWorkplaceId) {
+        Queue ticket = queueRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Талон не знайдено"));
+
+        if (newServiceId != null) {
+            ServiceEntity newServiceEntity = serviceEntityRepository.findById(newServiceId)
+                    .orElseThrow(() -> new RuntimeException("Нова послуга не знайдена"));
+            ticket.setServiceEntity(newServiceEntity);
+        }
+
+        if (newWorkplaceId != null) {
+            Workplace newWorkplace = workplaceRepository.findById(newWorkplaceId)
+                    .orElseThrow(() -> new RuntimeException("Нове робоче місце не знайдено"));
+            ticket.setWorkplace(newWorkplace);
+        }
+
+        return queueRepository.save(ticket);
+    }
+
+    public void deleteTicket(Long ticketId) {
+        if (queueRepository.existsById(ticketId)) {
+            queueRepository.deleteById(ticketId);
+        } else {
+            throw new RuntimeException("Талон не знайдено");
+        }
+    }
+
+    public Queue transferClient(Long queueId, Long newWorkplaceId) {
         Queue queue = queueRepository.findById(queueId)
                 .orElseThrow(() -> new RuntimeException("Талон не знайдено"));
 
@@ -77,14 +100,19 @@ public class QueueService {
                 .orElseThrow(() -> new RuntimeException("Нове робоче місце не знайдено"));
 
         queue.setWorkplace(newWorkplace);
-        queueRepository.save(queue);
+        queue.setStatus(Queue.QueueStatus.ACTIVE); // Повертаємо статус "ACTIVE" для нового робочого місця
+        return queueRepository.save(queue);
     }
 
-    // Завершити сеанс
     public void completeSession(Long queueId) {
-        Queue queue = queueRepository.findById(queueId)
-                .orElseThrow(() -> new RuntimeException("Талон не знайдено"));
+        if (queueRepository.existsById(queueId)) {
+            queueRepository.deleteById(queueId); // Видаляємо талон при завершенні сеансу
+        } else {
+            throw new RuntimeException("Талон не знайдено");
+        }
+    }
 
-        queueRepository.delete(queue);  // Видалення клієнта з черги після завершення сеансу
+    private int generateTicketNumber() {
+        return ++ticketNumberCounter;
     }
 }

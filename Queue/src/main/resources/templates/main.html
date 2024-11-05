@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Головна сторінка: Вибір ролі та Поточна черга</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Ваші стилі -->
+    <title>Головна сторінка</title>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 
@@ -20,8 +20,8 @@
 <div id="queue"></div>
 
 <script>
-    function updateLiveQueue() {
-        fetch('/queues/current-queue')
+    function loadQueue() {
+        fetch('/all-in-queue')
             .then(response => response.json())
             .then(queue => {
                 const queueDiv = document.getElementById('queue');
@@ -32,17 +32,16 @@
                     queue.forEach(entry => {
                         const entryElement = document.createElement('div');
                         entryElement.innerHTML = `
-                    <p>Талон №${entry.ticketNumber}: Послуга ${entry.serviceEntity.serviceName} - Віконце ${entry.workplace.windowNumber}</p>
-                    <hr>
-                `;
+              <p>Клієнт: ${entry.client.username} - Послуга: ${entry.serviceEntity.serviceName}</p>
+            `;
                         queueDiv.appendChild(entryElement);
                     });
                 }
             });
     }
 
-    setInterval(loadQueue, 5000);  // Оновлювати кожні 5 секунд
-    updateLiveQueue();  // Перший виклик
+    loadQueue(); // Initial load of the queue
+    setInterval(loadQueue, 5000); // Reload queue every 5 seconds
 </script>
 
 </body>

@@ -27,7 +27,7 @@ public class ClientRegistrationController {
         return "registration-client";  // Відображаємо сторінку реєстрації
     }
 
-    @PostMapping("/register-client")
+    @PostMapping("/add-client")
     public ModelAndView registerClient(@RequestParam String name, @RequestParam String phone) {
         // Перевірка наявності клієнта з таким же номером телефону
         if (clientRepository.findByPhoneNumber(phone).isPresent()) {
@@ -45,6 +45,6 @@ public class ClientRegistrationController {
         String otpCode = otpService.generateOTP();
         otpService.saveOtp(phone, otpCode);  // Зберігаємо OTP
 
-        return new ModelAndView("otp-verification-reg", "phone", phone);
+        return new ModelAndView("otp-verification", "phone", phone);
     }
 }

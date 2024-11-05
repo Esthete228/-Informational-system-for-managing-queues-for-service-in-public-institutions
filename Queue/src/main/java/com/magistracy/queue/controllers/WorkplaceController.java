@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin-dashboard/workplaces")
+@RequestMapping("/workplaces")
 public class WorkplaceController {
 
     private final WorkplaceService workplaceService;

@@ -1,223 +1,345 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Панель працівника</title>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    #queue { margin-top: 20px; }
-  </style>
+  <title>Дошка працівника</title>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<h1>Панель працівника</h1>
+<h1>Дошка працівника</h1>
+
+<div id="notification" style="display: none;"></div> <!-- Notification area -->
+
 <h2>Створити талон</h2>
 <form id="create-ticket-form">
-  <label for="serviceId">Виберіть послугу:</label>
-  <select id="serviceId" name="serviceId" required>
-    <!-- Динамічно завантажуємо список послуг -->
-  </select>
-  <label for="workplaceId">Введіть ID робочого місця:</label>
-  <input type="number" id="workplaceId" name="workplaceId" required>
+  <label for="serviceId">Оберіть послугу:</label>
+  <select id="serviceId" name="serviceId" required></select>
+
+  <label for="workplaceId">Оберіть робоче місце:</label>
+  <select id="workplaceId" name="workplaceId" required></select>
+
   <button type="submit">Створити талон</button>
 </form>
 
 <h2>Оновити талон</h2>
 <form id="update-ticket-form">
-  <label for="queueId">Введіть ID талону:</label>
-  <input type="number" id="queueId" name="queueId" required>
-  <label for="newServiceId">Виберіть нову послугу:</label>
-  <select id="newServiceId" name="newServiceId" required>
-    <!-- Динамічно завантажуємо список нових послуг -->
-  </select>
-  <label for="newWorkplaceId">Введіть новий ID робочого місця:</label>
-  <input type="number" id="newWorkplaceId" name="newWorkplaceId" required>
+  <label for="queueId">Оберіть талон:</label>
+  <select id="queueId" name="queueId" required></select>
+
+  <label for="newServiceId">Нова послуга:</label>
+  <select id="newServiceId" name="newServiceId" required></select>
+
+  <label for="newWorkplaceId">Нове робоче місце:</label>
+  <select id="newWorkplaceId" name="newWorkplaceId" required></select>
+
   <button type="submit">Оновити талон</button>
 </form>
 
 <h2>Видалити талон</h2>
-<input type="number" id="deleteQueueId" placeholder="Введіть ID талону">
-<button onclick="deleteTicket()">Видалити талон</button>
+<form id="delete-ticket-form">
+  <label for="deleteQueueId">Оберіть талон:</label>
+  <select id="deleteQueueId" name="deleteQueueId" required></select>
+  <button type="submit">Видалити талон</button>
+</form>
 
 <h2>Поточна черга</h2>
-<div id="queue"></div>
-<button onclick="callNextClient()">Викликати наступного клієнта</button>
+<div id="current-queue"></div>
+
+<h2>Викликати клієнта</h2>
+<button id="call-next-client">Викликати наступного клієнта</button>
+
+<h2>Клієнт, що обслуговується:</h2>
+<div id="current-client"></div> <!-- Active client area -->
+
+<h2>Передати клієнта</h2>
+<form id="transfer-client-form">
+  <label for="transferQueueId">Оберіть талон:</label>
+  <select id="transferQueueId" name="transferQueueId" required></select>
+
+  <label for="transferWorkplaceId">Оберіть нове робоче місце:</label>
+  <select id="transferWorkplaceId" name="transferWorkplaceId" required></select>
+
+  <button type="submit">Передати клієнта</button>
+</form>
 
 <h2>Завершити сеанс</h2>
-<input type="number" id="sessionQueueId" placeholder="Введіть ID запису">
-<button onclick="completeSession()">Завершити сеанс</button>
+<form id="complete-session-form">
+  <label for="completeQueueId">Оберіть талон:</label>
+  <select id="completeQueueId" name="completeQueueId" required></select>
+  <button type="submit">Завершити сеанс</button>
+</form>
 
 <script>
-  // Завантаження списку послуг
-  function loadServices() {
-    fetch('/services/all-services')
-            .then(response => response.json())
-            .then(services => {
-              const serviceSelect = document.getElementById('service');
-              const newServiceSelect = document.getElementById('newServiceId');
-              services.forEach(service => {
-                const option = document.createElement('option');
-                option.value = service.id;
-                option.text = service.serviceName;
-                serviceSelect.add(option);
-                newServiceSelect.add(option.cloneNode(true)); // Клонування для нового списку
+  document.addEventListener("DOMContentLoaded", function() {
+    const createTicketForm = document.getElementById("create-ticket-form");
+    const updateTicketForm = document.getElementById("update-ticket-form");
+    const deleteTicketForm = document.getElementById("delete-ticket-form");
+    const transferClientForm = document.getElementById("transfer-client-form");
+    const completeSessionForm = document.getElementById("complete-session-form");
+    const currentQueueDiv = document.getElementById("current-queue");
+    const notificationDiv = document.getElementById("notification");
+
+    async function populateDropdowns() {
+      try {
+        const [services, workplaces] = await Promise.all([
+          fetch('/services/all-services').then(res => res.json()),
+          fetch('/workplaces/all-workplaces').then(res => res.json()),
+        ]);
+
+        const serviceSelects = [document.getElementById('serviceId'), document.getElementById('newServiceId')];
+        const workplaceSelects = [document.getElementById('workplaceId'), document.getElementById('newWorkplaceId'), document.getElementById('transferWorkplaceId')];
+
+        serviceSelects.forEach(select => {
+          select.innerHTML = '<option value="">Оберіть послугу</option>';
+          services.forEach(service => {
+            const option = new Option(service.serviceName, service.id);
+            select.appendChild(option);
+          });
+        });
+
+        workplaceSelects.forEach(select => {
+          select.innerHTML = '<option value="">Оберіть робоче місце</option>';
+          workplaces.forEach(workplace => {
+            const option = new Option(workplace.workplaceName, workplace.id);
+            select.appendChild(option);
+          });
+        });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    }
+
+    async function loadQueue() {
+      // Fetch the current workplace ID from the session
+      const response = await fetch('/current-workplace');
+      if (!response.ok) {
+        console.error("Failed to load workplace ID.");
+        return; // Exit if the fetch fails
+      }
+      const workplaceId = await response.json();
+      console.log("Current Workplace ID:", workplaceId); // Log the workplace ID
+
+      if (!workplaceId) {
+        console.error("Workplace ID is undefined. Cannot load the queue.");
+        return; // Exit the function if workplaceId is not defined
+      }
+
+      fetch(`/queues/current-queue/${workplaceId}`)
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error("Network response was not ok");
+                }
+                return response.json();
+              })
+              .then(data => {
+                console.log("Queue data:", data); // Log the fetched data
+              })
+              .catch(error => {
+                console.error('Error loading queue:', error);
               });
-            })
-            .catch(error => console.error('Помилка при завантаженні послуг:', error));
-  }
-
-  // Завантаження робочих місць
-  function loadWorkplaces(serviceId) {
-    fetch(`/workplaces/by-service/${serviceId}`) // Adjust the endpoint as necessary
-            .then(response => response.json())
-            .then(workplaces => {
-              const workplaceSelect = document.getElementById('workplaceId');
-              workplaceSelect.innerHTML = ''; // Clear previous options
-              workplaces.forEach(workplace => {
-                const option = document.createElement('option');
-                option.value = workplace.id;
-                option.textContent = `Вікно ${workplace.windowNumber}`;
-                workplaceSelect.appendChild(option);
-              });
-            })
-            .catch(error => console.error('Помилка при завантаженні робочих місць:', error));
-  }
+    }
 
 
-  document.getElementById('service').addEventListener('change', function() {
-    const serviceId = this.value;
-    loadWorkplaces(serviceId);
-  });
+    async function populateCurrentQueue() {
+      const workplaceId = document.getElementById("workplaceId").value;
+      if (!workplaceId) return; // Якщо workplaceId не вибрано, виходимо
 
-  // Завантаження черги
-  function loadQueue() {
-    fetch('/queues/current-queue')
-            .then(response => response.json())
-            .then(queue => {
-              const queueDiv = document.getElementById('queue');
-              queueDiv.innerHTML = '';
-              if (queue.length === 0) {
-                queueDiv.innerHTML = '<p>Черга пуста.</p>';
-              } else {
-                queue.forEach(entry => {
-                  const entryElement = document.createElement('div');
-                  entryElement.innerHTML = `
-              <p>Талон №${entry.ticketNumber}: Послуга ${entry.serviceEntity.serviceName} - Віконце ${entry.workplace.windowNumber}</p>
-              <hr>
-            `;
-                  queueDiv.appendChild(entryElement);
-                });
+      try {
+        const response = await fetch(`/queues/current-queue/${workplaceId}`);
+        if (!response.ok) {
+          throw new Error("Failed to load queue data.");
+        }
 
-                // Оновлення випадаючих списків для редагування та видалення
-                updateQueueSelect(queue);
-              }
+        const queueData = await response.json();
+        console.log("Queue data:", queueData); // Log fetched data for debugging
+        currentQueueDiv.innerHTML = "";
+
+        const queueSelects = [
+          document.getElementById("queueId"),
+          document.getElementById("deleteQueueId"),
+          document.getElementById("transferQueueId"),
+          document.getElementById("completeQueueId"),
+        ];
+
+        // Clear previous options in the selects
+        queueSelects.forEach(select => {
+          select.innerHTML = '<option value="">Оберіть талон</option>';
+        });
+
+        if (queueData && queueData.length > 0) {
+          queueData.forEach(ticket => {
+            const div = document.createElement("div");
+            div.innerText = `Талон: ${ticket.ticketNumber}, Послуга: ${ticket.serviceEntity.name}, Статус: ${ticket.status}`;
+            currentQueueDiv.appendChild(div);
+
+            queueSelects.forEach(select => {
+              const option = new Option(`Талон ${ticket.ticketNumber}`, ticket.id);
+              select.appendChild(option);
             });
-  }
+          });
+        } else {
+          currentQueueDiv.innerText = "Черга пуста.";
+        }
+      } catch (error) {
+        console.error("Error loading current queue:", error);
+      }
+    }
 
-  // Оновлення списків талонів
-  function updateQueueSelect(queue) {
-    const updateSelect = document.getElementById('updateQueueSelect');
-    const deleteSelect = document.getElementById('deleteQueueSelect');
+    function showNotification(message) {
+      notificationDiv.innerText = message;
+      notificationDiv.style.display = 'block';
+      setTimeout(() => {
+        notificationDiv.style.display = 'none';
+      }, 3000); // Hide after 3 seconds
+    }
 
-    // Очищення списків
-    updateSelect.innerHTML = '';
-    deleteSelect.innerHTML = '';
+    createTicketForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+      const serviceId = document.getElementById("serviceId").value;
+      const workplaceId = document.getElementById("workplaceId").value;
 
-    queue.forEach(entry => {
-      const option = document.createElement('option');
-      option.value = entry.id;
-      option.textContent = `Талон №${entry.ticketNumber} (Послуга: ${entry.serviceEntity.serviceName})`;
-      updateSelect.appendChild(option);
+      try {
+        const response = await fetch('/queues/create-ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serviceId, workplaceId })
+        });
 
-      const deleteOption = option.cloneNode(true);
-      deleteSelect.appendChild(deleteOption);
+        if (response.ok) {
+          showNotification("Талон успішно створено!");
+          await populateCurrentQueue(); // Оновлення черги
+        } else {
+          showNotification("Не вдалося створити талон.");
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showNotification("Сталася помилка при створенні талону.");
+      }
     });
-  }
 
-  // Створити талон
-  document.getElementById('create-ticket-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const serviceId = document.getElementById('serviceId').value;
-    const workplaceId = document.getElementById('workplaceId').value;
-    const employeeId = // Отримайте ID працівника зі сесії або передайте його іншим чином
+    updateTicketForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+      const queueId = document.getElementById("queueId").value;
+      const newServiceId = document.getElementById("newServiceId").value;
+      const newWorkplaceId = document.getElementById("newWorkplaceId").value;
 
-            fetch('/queues/create-ticket', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ serviceId: serviceId, workplaceId: workplaceId, employeeId: employeeId })
-            })
-                    .then(response => response.json())
-                    .then(data => {
-                      alert(`Талон №${data.ticketNumber} створено для послуги ${data.serviceName} на вікно ${data.workplaceId}`);
-                      loadQueue(); // Оновлення черги
-                    })
-                    .catch(error => {
-                      console.error('Помилка:', error);
-                    });
+      try {
+        const response = await fetch(`/queues/update-ticket/${queueId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serviceId: newServiceId, workplaceId: newWorkplaceId })
+        });
+
+        if (response.ok) {
+          showNotification("Талон успішно оновлено!");
+          await populateCurrentQueue();
+        } else {
+          showNotification("Не вдалося оновити талон.");
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showNotification("Сталася помилка при оновленні талону.");
+      }
+    });
+
+    deleteTicketForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+      const queueId = document.getElementById("deleteQueueId").value;
+
+      try {
+        const response = await fetch(`/queues/delete-ticket/${queueId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          showNotification("Талон успішно видалено!");
+          await populateCurrentQueue();
+        } else {
+          showNotification("Не вдалося видалити талон.");
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showNotification("Сталася помилка при видаленні талону.");
+      }
+    });
+
+    document.getElementById("call-next-client").addEventListener("click", async function() {
+      const workplaceId = document.getElementById("workplaceId").value;
+
+      try {
+        const response = await fetch(`/queues/call-next-client/${workplaceId}`, {
+          method: 'POST'
+        });
+
+        if (response.ok) {
+          const client = await response.json();
+          document.getElementById("current-client").innerText = `Клієнт: ${client.ticketNumber}`;
+          showNotification("Клієнта викликано!");
+          await populateCurrentQueue();
+        } else {
+          showNotification("Не вдалося викликати клієнта.");
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showNotification("Сталася помилка при виклику клієнта.");
+      }
+    });
+
+    transferClientForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+      const queueId = document.getElementById("transferQueueId").value;
+      const transferWorkplaceId = document.getElementById("transferWorkplaceId").value;
+
+      try {
+        const response = await fetch(`/queues/transfer-client/${queueId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workplaceId: transferWorkplaceId })
+        });
+
+        if (response.ok) {
+          showNotification("Клієнта успішно передано!");
+          await populateCurrentQueue();
+        } else {
+          showNotification("Не вдалося передати клієнта.");
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showNotification("Сталася помилка при передачі клієнта.");
+      }
+    });
+
+    completeSessionForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+      const queueId = document.getElementById("completeQueueId").value;
+
+      try {
+        const response = await fetch(`/queues/complete-session/${queueId}`, {
+          method: 'PUT'
+        });
+
+        if (response.ok) {
+          showNotification("Сеанс успішно завершено!");
+          await populateCurrentQueue();
+          document.getElementById("current-client").innerText = "";
+        } else {
+          showNotification("Не вдалося завершити сеанс.");
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showNotification("Сталася помилка при завершенні сеансу.");
+      }
+    });
+
+    document.getElementById("workplaceId").addEventListener("change", populateCurrentQueue);
+
+    populateDropdowns();
+    populateCurrentQueue();
+    // Оновлюйте поточну чергу кожні 5 секунд
+    setInterval(loadQueue, 5000);
+    setInterval(populateCurrentQueue, 5000);
   });
-
-  // Оновити талон
-  document.getElementById('update-ticket-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const queueId = document.getElementById('queueId').value;
-    const newServiceId = document.getElementById('newServiceId').value;
-    const newWorkplaceId = document.getElementById('newWorkplaceId').value;
-
-    fetch(`/queues/update-ticket/${queueId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ newServiceId: newServiceId, newWorkplaceId: newWorkplaceId })
-    })
-            .then(response => response.json())
-            .then(data => {
-              alert(`Талон №${data.ticketNumber} оновлено для послуги ${data.serviceName}`);
-              loadQueue(); // Оновлення черги
-            })
-            .catch(error => {
-              console.error('Помилка:', error);
-            });
-  });
-
-  // Видалити талон
-  function deleteTicket() {
-    const queueId = document.getElementById('deleteQueueId').value;
-    fetch(`/queues/delete-ticket/${queueId}`, { method: 'DELETE' })
-            .then(response => response.text())
-            .then(data => {
-              alert(data);
-              loadQueue(); // Оновлення черги
-            })
-            .catch(error => {
-              console.error('Помилка:', error);
-            });
-  }
-
-  function callNextClient() {
-    fetch('/queues/call-next?workplaceId=1', { method: 'POST' })
-            .then(response => response.text())
-            .then(data => {
-              alert(data);
-              loadQueue();
-            });
-  }
-
-  function completeSession() {
-    const queueId = document.getElementById('sessionQueueId').value;
-    fetch(`/queues/complete-session?queueId=${queueId}`, { method: 'POST' })
-            .then(response => response.text())
-            .then(data => {
-              alert(data);
-              loadQueue();
-            });
-  }
-
-  loadServices();
-  loadQueue();
-  setInterval(loadQueue, 5000);
 </script>
 </body>
 </html>

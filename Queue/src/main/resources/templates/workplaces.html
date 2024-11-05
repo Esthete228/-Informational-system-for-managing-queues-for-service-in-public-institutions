@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Керування робочими місцями</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <h1>Керування робочими місцями</h1>
@@ -37,7 +37,7 @@
 <script>
   // Завантаження всіх робочих місць
   function loadWorkplaces() {
-    fetch('/admin-dashboard/workplaces/all-workplaces')
+    fetch('/workplaces/all-workplaces')
             .then(response => response.json())
             .then(workplaces => {
               const updateSelect = document.getElementById('workplaceIdToUpdate');
@@ -71,7 +71,7 @@
     event.preventDefault();
     const workplaceName = document.getElementById('workplaceName').value;
 
-    fetch('/admin-dashboard/workplaces/add-workplace', {
+    fetch('/workplaces/add-workplace', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -94,7 +94,7 @@
     const workplaceId = document.getElementById('workplaceIdToUpdate').value;
     const updatedWorkplaceName = document.getElementById('updatedWorkplaceName').value;
 
-    fetch(`/admin-dashboard/workplaces/update-workplace/${workplaceId}`, {
+    fetch(`/workplaces/update-workplace/${workplaceId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -116,7 +116,7 @@
     event.preventDefault();
     const workplaceId = document.getElementById('workplaceIdToDelete').value;
 
-    fetch(`/admin-dashboard/workplaces/delete-workplace/${workplaceId}`, {
+    fetch(`/workplaces/delete-workplace/${workplaceId}`, {
       method: 'DELETE'
     }).then(response => {
       if (response.ok) {

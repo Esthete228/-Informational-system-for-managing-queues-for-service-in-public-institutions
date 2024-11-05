@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Керування працівниками</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <h1>Керування працівниками</h1>
@@ -68,7 +68,7 @@
 <script>
 
   // Завантаження всіх працівників для оновлення і видалення
-  fetch('/admin-dashboard/employees/all-employees')
+  fetch('/employees/all-employees')
           .then(response => response.json())
           .then(employees => {
             const updateSelect = document.getElementById('employeeIdToUpdate');
@@ -83,7 +83,7 @@
           })
           .catch(error => console.error('Error:', error));
   // Завантаження всіх робочих місць для форми додавання та оновлення працівника
-  fetch('/admin-dashboard/workplaces/all-workplaces')
+  fetch('/workplaces/all-workplaces')
           .then(response => response.json())
           .then(workplaces => {
             const addWorkplaceSelect = document.getElementById('assignedWorkplace');
@@ -109,7 +109,7 @@
     const role = document.getElementById('employeeRole').value;
     const workplaceId = document.getElementById('assignedWorkplace').value; // Отримуємо ID робочого місця
 
-    fetch('/admin-dashboard/employees/add-employee', {
+    fetch('/employees/add-employee', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -138,7 +138,7 @@
     const updatedRole = document.getElementById('updatedEmployeeRole').value;
     const updatedWorkplaceId = document.getElementById('updatedAssignedWorkplace').value; // Отримуємо ID робочого місця
 
-    fetch(`/admin-dashboard/employees/update-employee/${employeeId}`, {
+    fetch(`/employees/update-employee/${employeeId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -163,7 +163,7 @@
     event.preventDefault();
     const employeeId = document.getElementById('employeeIdToDelete').value;
 
-    fetch(`/admin-dashboard/employees/delete-employee/${employeeId}`, {
+    fetch(`/employees/delete-employee/${employeeId}`, {
       method: 'DELETE'
     }).then(response => {
       if (response.ok) {

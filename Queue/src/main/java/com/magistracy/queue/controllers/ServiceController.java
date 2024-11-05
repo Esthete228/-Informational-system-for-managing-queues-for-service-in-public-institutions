@@ -20,47 +20,42 @@ import java.util.stream.Collectors;
 public class ServiceController {
 
     private final ServiceEntityRepository serviceEntityRepository;
-    private final WorkplaceRepository workplaceRepository;
-    private final ServiceManagementService serviceManagementService;
 
     public ServiceController(ServiceEntityRepository serviceEntityRepository, WorkplaceRepository workplaceRepository, ServiceManagementService serviceManagementService) {
         this.serviceEntityRepository = serviceEntityRepository;
-        this.workplaceRepository = workplaceRepository;
-        this.serviceManagementService = serviceManagementService;
     }
 
-    @GetMapping("/all-services") // This should match your fetch call
-    public List<ServiceEntity> getAllServices() {
-        return serviceEntityRepository.findAll();
+    // Отримати всі послуги
+    @GetMapping("/all-services")
+    public ResponseEntity<List<ServiceEntity>> getAllServices() {
+        List<ServiceEntity> services = serviceEntityRepository.findAll();
+        return ResponseEntity.ok(services);
     }
 
+    // Додавання нової послуги
     @PostMapping("/add-service")
     public ResponseEntity<ServiceEntity> addService(@RequestBody Map<String, Object> payload) {
-        System.out.println("Received payload: " + payload);
-        String serviceName = (String) payload.get("serviceName");
-        String serviceDescription = (String) payload.get("serviceDescription");
+        String serviceName = payload.get("serviceName").toString();
+        String serviceDescription = payload.get("serviceDescription").toString();
 
-        ServiceEntity serviceEntity = new ServiceEntity();
-        serviceEntity.setServiceName(serviceName);
-        serviceEntity.setServiceDescription(serviceDescription);
+        ServiceEntity service = new ServiceEntity();
+        service.setServiceName(serviceName);
+        service.setServiceDescription(serviceDescription);
 
-        ServiceEntity savedService = serviceEntityRepository.save(serviceEntity);
+        ServiceEntity savedService = serviceEntityRepository.save(service);
         return ResponseEntity.ok(savedService);
     }
 
+    // Оновлення послуги
     @PutMapping("/update-service/{serviceId}")
-    public ResponseEntity<ServiceEntity> updateService(@PathVariable Long serviceId, @RequestBody ServiceEntity service) {
-        // Знаходимо існуючу послугу
+    public ResponseEntity<ServiceEntity> updateService(@PathVariable Long serviceId, @RequestBody Map<String, Object> payload) {
         ServiceEntity existingService = serviceEntityRepository.findById(serviceId)
                 .orElseThrow(() -> new RuntimeException("Service not found"));
 
-        // Оновлюємо поля послуги
-        existingService.setServiceName(service.getServiceName());
-        existingService.setServiceDescription(service.getServiceDescription());
+        existingService.setServiceName(payload.get("serviceName").toString());
+        existingService.setServiceDescription(payload.get("serviceDescription").toString());
 
-        // Зберігаємо оновлену послугу
         ServiceEntity updatedService = serviceEntityRepository.save(existingService);
-
         return ResponseEntity.ok(updatedService);
     }
 

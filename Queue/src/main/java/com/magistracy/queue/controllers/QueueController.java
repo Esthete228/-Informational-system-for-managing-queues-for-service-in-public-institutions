@@ -2,29 +2,56 @@ package com.magistracy.queue.controllers;
 
 import com.magistracy.queue.entities.Queue;
 import com.magistracy.queue.services.QueueService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/queue")
+@RequestMapping("/queues")
 public class QueueController {
 
-    @Autowired
-    private QueueService queueService;
+    private final QueueService queueService;
 
-    @PostMapping("/add-to-queue")
-    public ResponseEntity<Queue> addToQueue(@RequestParam Long clientId, @RequestParam Long serviceId, @RequestParam Long workplaceId) {
-        Queue newQueue = queueService.addClientToQueue(clientId, serviceId, workplaceId);
+    public QueueController(QueueService queueService) {
+        this.queueService = queueService;
+    }
+
+    @PostMapping("/create-ticket")
+    public ResponseEntity<Queue> createTicket(@RequestBody Map<String, Long> payload) {
+        Long serviceId = payload.get("serviceId");
+        Long workplaceId = payload.get("workplaceId");
+        Queue newQueue = queueService.createTicket(serviceId, workplaceId);
         return ResponseEntity.ok(newQueue);
     }
 
-    @GetMapping("/workplace/{workplaceId}")
-    public ResponseEntity<List<Queue>> getQueueByWorkplace(@PathVariable Long workplaceId) {
-        List<Queue> queueList = queueService.getQueueByWorkplace(workplaceId);
-        return ResponseEntity.ok(queueList);
+    @PutMapping("/update-ticket/{queueId}")
+    public ResponseEntity<Queue> updateTicket(@PathVariable Long queueId, @RequestBody Map<String, Long> payload) {
+        Long newServiceId = payload.get("newServiceId");
+        Long newWorkplaceId = payload.get("newWorkplaceId");
+
+        Queue updatedQueue = queueService.updateTicket(queueId, newServiceId, newWorkplaceId);
+        return ResponseEntity.ok(updatedQueue);
+    }
+
+    @DeleteMapping("/delete-ticket/{queueId}")
+    public ResponseEntity<String> deleteTicket(@PathVariable Long queueId) {
+        queueService.deleteTicket(queueId);
+        return ResponseEntity.ok("Талон успішно видалено");
+    }
+
+
+    @GetMapping("/current-queue/{workplaceId}")
+    public ResponseEntity<List<Queue>> getCurrentQueue(@PathVariable Long workplaceId) {
+        List<Queue> queue = queueService.getCurrentQueue(workplaceId);
+        return ResponseEntity.ok(queue);
+    }
+
+    @GetMapping("/current-client/{workplaceId}")
+    public ResponseEntity<Queue> getCurrentClient(@PathVariable Long workplaceId) {
+        Queue currentClient = queueService.getCurrentClient(workplaceId);
+        return ResponseEntity.ok(currentClient);
     }
 
     @PostMapping("/call-next-client/{workplaceId}")
@@ -33,15 +60,19 @@ public class QueueController {
         return ResponseEntity.ok(nextClient);
     }
 
-    @PostMapping("/transfer-client/{queueId}")
-    public ResponseEntity<String> transferClient(@PathVariable Long queueId, @RequestParam Long newWorkplaceId) {
-        queueService.transferClient(queueId, newWorkplaceId);
-        return ResponseEntity.ok("Клієнта передано на інше робоче місце");
+    @PostMapping("/transfer-ticket/{queueId}")
+    public ResponseEntity<Queue> transferClient(@PathVariable Long queueId, @RequestParam Long newWorkplaceId) {
+        Queue updatedQueue = queueService.transferClient(queueId, newWorkplaceId);
+        return ResponseEntity.ok(updatedQueue);
     }
 
     @PostMapping("/complete-session/{queueId}")
     public ResponseEntity<String> completeSession(@PathVariable Long queueId) {
-        queueService.completeSession(queueId);
-        return ResponseEntity.ok("Сеанс завершено");
+        try {
+            queueService.completeSession(queueId);
+            return ResponseEntity.ok("Сесію завершено успішно");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
