@@ -1,6 +1,5 @@
 package com.magistracy.queue.services;
 
-import com.magistracy.queue.entities.ServiceEntity;
 import com.magistracy.queue.entities.Workplace;
 import com.magistracy.queue.repositories.ServiceEntityRepository;
 import com.magistracy.queue.repositories.WorkplaceRepository;

@@ -1,15 +1,9 @@
 package com.magistracy.queue.controllers;
 
-import com.magistracy.queue.entities.Queue;
-import com.magistracy.queue.services.QueueService;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
-
-import java.util.List;
 
 @Controller
 public class AdminDashboardController {
@@ -49,6 +43,16 @@ public class AdminDashboardController {
         String role = (String) session.getAttribute("role");
         if ("admin".equals(role)) {
             return new ModelAndView("workplaces");
+
+        }
+        return new ModelAndView("redirect:/login-employee");
+    }
+
+    @GetMapping("/admin-dashboard/reports")
+    public ModelAndView showWReportsDashboard(HttpSession session) {
+        String role = (String) session.getAttribute("role");
+        if ("admin".equals(role)) {
+            return new ModelAndView("reports");
 
         }
         return new ModelAndView("redirect:/login-employee");

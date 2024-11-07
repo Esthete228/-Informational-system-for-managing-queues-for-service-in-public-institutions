@@ -118,7 +118,8 @@ public class QueueService {
             throw new RuntimeException("Можна завершувати тільки сесії зі статусом IN_PROGRESS");
         }
 
-        queueRepository.deleteById(queueId); // Видаляємо талон при завершенні сеансу
+        queue.setStatus(Queue.QueueStatus.COMPLETED); // Повертаємо статус "ACTIVE" для нового робочого місця
+        queueRepository.save(queue); // Видаляємо талон при завершенні сеансу
     }
 
     private int generateTicketNumber() {

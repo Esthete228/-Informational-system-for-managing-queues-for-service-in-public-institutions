@@ -1,9 +1,8 @@
 package com.magistracy.queue.controllers;
 
 import com.magistracy.queue.entities.Appointment;
-import com.magistracy.queue.entities.ServiceEntity;
 import com.magistracy.queue.entities.Client;
-import com.magistracy.queue.repositories.AppointmentRepository;
+import com.magistracy.queue.entities.ServiceEntity;
 import com.magistracy.queue.repositories.ClientRepository;
 import com.magistracy.queue.repositories.ServiceEntityRepository;
 import com.magistracy.queue.services.AppointmentService;

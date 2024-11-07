@@ -1,8 +1,7 @@
 package com.magistracy.queue.services;
 
 import com.magistracy.queue.entities.Employee;
-import com.magistracy.queue.repositories.EmployeeRepository; // Переконайтеся, що у вас є репозиторій
-import org.springframework.beans.factory.annotation.Autowired;
+import com.magistracy.queue.repositories.EmployeeRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

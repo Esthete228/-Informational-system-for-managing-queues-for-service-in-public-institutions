@@ -1,19 +1,14 @@
 package com.magistracy.queue.controllers;
 
 import com.magistracy.queue.entities.ServiceEntity;
-import com.magistracy.queue.entities.Workplace;
 import com.magistracy.queue.repositories.ServiceEntityRepository;
 import com.magistracy.queue.repositories.WorkplaceRepository;
 import com.magistracy.queue.services.ServiceManagementService;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/services")
