@@ -12,4 +12,6 @@ public interface QueueRepository extends JpaRepository<Queue, Long> {
     List<Queue> findByWorkplaceIdAndStatus(Long workplaceId, Queue.QueueStatus status);
 
     Optional <Queue> findFirstByWorkplaceIdAndStatus(Long workplaceId, Queue.QueueStatus queueStatus);
+
+    List<Queue> findByStatus(Queue.QueueStatus status);
 }

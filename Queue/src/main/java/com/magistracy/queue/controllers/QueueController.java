@@ -54,6 +54,12 @@ public class QueueController {
         return ResponseEntity.ok(currentClient);
     }
 
+    @GetMapping("/in-progress-queue")
+    public ResponseEntity<List<Queue>> getInProgressQueue() {
+        List<Queue> inProgressQueue = queueService.getInProgressTickets();
+        return ResponseEntity.ok(inProgressQueue);
+    }
+
     @PostMapping("/call-next-client/{workplaceId}")
     public ResponseEntity<Queue> callNextClient(@PathVariable Long workplaceId) {
         Queue nextClient = queueService.callNextClient(workplaceId);

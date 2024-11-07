@@ -49,6 +49,12 @@ public class QueueService {
         return queueRepository.findByWorkplaceIdAndStatus(workplaceId, Queue.QueueStatus.ACTIVE);
     }
 
+    public List<Queue> getInProgressTickets() {
+        List<Queue> inProgressTickets = queueRepository.findByStatus(Queue.QueueStatus.IN_PROGRESS);
+        inProgressTickets.forEach(queue -> queue.getWorkplace().getWorkplaceName()); // Завантаження імені робочого місця
+        return inProgressTickets;
+    }
+
     public Queue getCurrentClient(Long workplaceId) {
         // Fetch the current client in IN_PROGRESS status for the specified workplace
         return queueRepository.findFirstByWorkplaceIdAndStatus(workplaceId, Queue.QueueStatus.IN_PROGRESS)

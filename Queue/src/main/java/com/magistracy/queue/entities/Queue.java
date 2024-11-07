@@ -2,6 +2,7 @@
 
 package com.magistracy.queue.entities;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -18,10 +19,12 @@ public class Queue {
 
     @ManyToOne
     @JoinColumn(name = "service_id")
+    @JsonManagedReference
     private ServiceEntity serviceEntity;
 
     @ManyToOne
-    @JoinColumn(name = "workplace_id")
+    @JoinColumn(name = "workplace_id", nullable = false)
+    @JsonManagedReference
     private Workplace workplace;
 
     private int ticketNumber;

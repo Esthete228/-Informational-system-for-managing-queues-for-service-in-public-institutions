@@ -28,4 +28,5 @@ public class Workplace {
     public void setWorkplaceName(String workplaceName) {
         this.workplaceName = workplaceName;
     }
+
 }

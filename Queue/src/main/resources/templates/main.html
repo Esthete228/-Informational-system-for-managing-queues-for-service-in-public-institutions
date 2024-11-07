@@ -8,7 +8,7 @@
 </head>
 <body>
 
-<h1>Оберіть вашу роль</h1>
+<h2>Оберіть вашу роль</h2>
 <div class="buttons">
     <button onclick="window.location.href='/login-employee'">Я працівник</button>
     <button onclick="window.location.href='/login-client'">Я клієнт</button>
@@ -17,31 +17,40 @@
 <hr>
 
 <h2>Поточна черга</h2>
-<div id="queue"></div>
+<div id="in-progress-queue"></div>
 
 <script>
-    function loadQueue() {
-        fetch('/all-in-queue')
+    function loadInProgressQueue() {
+        fetch('/queues/in-progress-queue')
             .then(response => response.json())
             .then(queue => {
-                const queueDiv = document.getElementById('queue');
+                const queueDiv = document.getElementById('in-progress-queue');
                 queueDiv.innerHTML = '';
+
                 if (queue.length === 0) {
                     queueDiv.innerHTML = '<p>Черга пуста.</p>';
                 } else {
+                    const table = document.createElement('table');
+                    const header = `<tr><th>Талон</th><th>Робоче місце</th></tr>`;
+                    table.innerHTML = header;
+
                     queue.forEach(entry => {
-                        const entryElement = document.createElement('div');
-                        entryElement.innerHTML = `
-              <p>Клієнт: ${entry.client.username} - Послуга: ${entry.serviceEntity.serviceName}</p>
-            `;
-                        queueDiv.appendChild(entryElement);
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${entry.ticketNumber}</td>
+                            <td>${entry.workplace?.workplaceName || entry.workplace.id}</td>
+                        `;
+                        table.appendChild(row);
                     });
+
+                    queueDiv.appendChild(table);
                 }
-            });
+            })
+            .catch(error => console.error('Error loading queue:', error));
     }
 
-    loadQueue(); // Initial load of the queue
-    setInterval(loadQueue, 5000); // Reload queue every 5 seconds
+    loadInProgressQueue(); // Initial load of the in-progress queue
+    setInterval(loadInProgressQueue, 5000); // Reload queue every 5 seconds
 </script>
 
 </body>
