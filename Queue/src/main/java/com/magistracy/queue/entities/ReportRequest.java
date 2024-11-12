@@ -6,7 +6,7 @@ public class ReportRequest {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
 
-    // Конструктори, геттери, сеттери
+    // Конструктори, гетери, сетери
     public LocalDateTime getStartDate() {
         return startDate;
     }
