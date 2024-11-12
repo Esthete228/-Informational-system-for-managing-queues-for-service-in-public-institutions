@@ -5,14 +5,16 @@ body {
     padding: 0;
 }
 
+h1, h2 {
+    color: #333;
+}
+
 h1 {
     text-align: center;
-    color: #333;
     margin-top: 50px;
 }
 
 h2 {
-    color: #333;
     margin-bottom: 10px;
     margin-left: 20px;
 }
@@ -26,12 +28,6 @@ h2 {
     justify-content: space-between;
 }
 
-.top-bar .bar-theme {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-}
-
 .top-bar .bar-item {
     color: #fff;
     text-decoration: none;
@@ -43,13 +39,13 @@ h2 {
     text-decoration: underline;
 }
 
+/* Table styles */
 table {
     width: 100%;
     border-collapse: collapse;
 }
 
-th,
-td {
+th, td {
     padding: 8px;
     text-align: left;
     border-bottom: 1px solid #ddd;
@@ -68,7 +64,7 @@ td:last-child {
 }
 
 /* Content styles */
-.content {
+.content, .container {
     padding: 20px;
 }
 
@@ -78,13 +74,13 @@ td:last-child {
 
 .container h1 {
     font-size: 36px;
-    color: #333;
 }
 
 .container p {
     color: #555;
 }
 
+/* Form styles */
 form {
     max-width: 300px;
     margin: 0 auto;
@@ -93,6 +89,9 @@ form {
     border: 1px solid #ddd;
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 label {
@@ -107,6 +106,7 @@ input[type="number"],
 select {
     width: 100%;
     padding: 10px;
+    font-size: 16px;
     border: 1px solid #ccc;
     border-radius: 4px;
     box-sizing: border-box;
@@ -129,21 +129,28 @@ button:hover {
     background-color: #555;
 }
 
-a {
-    display: inline-block;
-    margin-top: 20px;
-    text-decoration: none;
-}
-
+button[type="submit"],
 a button {
     background-color: #ccc;
     color: #333;
-    align-self: center;
 }
 
+button[type="submit"]:hover,
 a button:hover {
     background-color: #ddd;
 }
+
+a {
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 20px;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Button styles */
 .button {
     display: inline-block;
     padding: 5px 10px;

@@ -5,74 +5,119 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Дошка працівника</title>
   <link rel="stylesheet" href="/styles.css">
+  <style>
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+    .modal-content { background-color: #f4f4f4; margin: 10% auto; padding: 20px; width: 80%; max-width: 500px; }
+    .close { float: right; font-size: 20px; cursor: pointer; }
+  </style>
 </head>
 <body>
 <h1>Дошка працівника</h1>
-
+<!-- Меню панель -->
+<div class="top-bar">
+  <div class="top-bar-left">
+    <button onclick="openModal('create-ticket-modal')">Створити талон</button>
+    <button onclick="openModal('update-ticket-modal')">Оновити талон</button>
+    <button onclick="openModal('delete-ticket-modal')">Видалити талон</button>
+    <button onclick="openModal('transfer-client-modal')">Передати клієнта</button>
+    <button id="call-next-client">Викликати наступного клієнта</button>
+    <button id="complete-session-button">Завершити сеанс</button>
+  </div>
+  <div class="top-bar-right">
+    <button onclick="window.location.href='/logout'">Вийти з облікового запису</button>
+  </div>
+</div>
 <!-- Notification area -->
 <div id="notification" style="display: none;"></div>
-
-<!-- Form to create a ticket -->
-<h2>Створити талон</h2>
-<form id="create-ticket-form">
-  <label for="serviceId">Оберіть послугу:</label>
-  <select id="serviceId" name="serviceId" required></select>
-
-  <label for="workplaceId">Оберіть робоче місце:</label>
-  <select id="workplaceId" name="workplaceId" required></select>
-
-  <button type="submit">Створити талон</button>
-</form>
-
-<!-- Form to update a ticket -->
-<h2>Оновити талон</h2>
-<form id="update-ticket-form">
-  <label for="queueId">Оберіть талон:</label>
-  <select id="queueId" name="queueId" required></select>
-
-  <label for="newServiceId">Нова послуга:</label>
-  <select id="newServiceId" name="newServiceId" required></select>
-
-  <label for="newWorkplaceId">Нове робоче місце:</label>
-  <select id="newWorkplaceId" name="newWorkplaceId" required></select>
-
-  <button type="submit">Оновити талон</button>
-</form>
-
-<!-- Form to delete a ticket -->
-<h2>Видалити талон</h2>
-<form id="delete-ticket-form">
-  <label for="deleteQueueId">Оберіть талон:</label>
-  <select id="deleteQueueId" name="deleteQueueId" required></select>
-  <button type="submit">Видалити талон</button>
-</form>
-
-<!-- Current queue section -->
+<!-- Поточна черга -->
 <h2>Поточна черга</h2>
 <div id="current-queue"></div>
 
-<!-- Button to call next client -->
-<h2>Викликати клієнта</h2>
-<button id="call-next-client">Викликати наступного клієнта</button>
-
-<!-- Current client section -->
+<!-- Клієнт, що обслуговується -->
 <h2>Клієнт, що обслуговується:</h2>
 <div id="current-client"></div>
 
-<!-- Form to transfer a client -->
-<h2>Передати клієнта</h2>
-<form id="transfer-client-form">
-  <label for="transferWorkplaceId">Оберіть нове робоче місце:</label>
-  <select id="transferWorkplaceId" name="transferWorkplaceId" required></select>
+<!-- Модальні вікна -->
+<div id="create-ticket-modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('create-ticket-modal')">&times;</span>
+    <h2>Створити талон</h2>
+    <form id="create-ticket-form">
+      <label for="serviceId">Оберіть послугу:</label>
+      <select id="serviceId" name="serviceId" required></select>
 
-  <button type="submit">Передати клієнта</button>
-</form>
+      <label for="workplaceId">Оберіть робоче місце:</label>
+      <select id="workplaceId" name="workplaceId" required></select>
 
-<!-- Button to complete a session -->
-<h2>Завершити сеанс</h2>
-<button id="complete-session-button">Завершити сеанс</button>
+      <button type="submit">Створити талон</button>
+    </form>
+  </div>
+</div>
+
+<div id="update-ticket-modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('update-ticket-modal')">&times;</span>
+    <h2>Оновити талон</h2>
+    <form id="update-ticket-form">
+      <label for="queueId">Оберіть талон:</label>
+      <select id="queueId" name="queueId" required></select>
+
+      <label for="newServiceId">Нова послуга:</label>
+      <select id="newServiceId" name="newServiceId" required></select>
+
+      <label for="newWorkplaceId">Нове робоче місце:</label>
+      <select id="newWorkplaceId" name="newWorkplaceId" required></select>
+
+      <button type="submit">Оновити талон</button>
+    </form>
+  </div>
+</div>
+
+<div id="delete-ticket-modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('delete-ticket-modal')">&times;</span>
+    <h2>Видалити талон</h2>
+    <form id="delete-ticket-form">
+      <label for="deleteQueueId">Оберіть талон:</label>
+      <select id="deleteQueueId" name="deleteQueueId" required></select>
+      <button type="submit">Видалити талон</button>
+    </form>
+  </div>
+</div>
+
+<div id="transfer-client-modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('transfer-client-modal')">&times;</span>
+    <h2>Передати клієнта</h2>
+    <form id="transfer-client-form">
+      <label for="transferWorkplaceId">Оберіть нове робоче місце:</label>
+      <select id="transferWorkplaceId" name="transferWorkplaceId" required></select>
+      <button type="submit">Передати клієнта</button>
+    </form>
+  </div>
+</div>
 
 <script>
+
+  // Функції для відкриття та закриття модальних вікон
+  function openModal(modalId) {
+    document.getElementById(modalId).style.display = "block";
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId).style.display = "none";
+  }
+
+  // Закриття модального вікна при кліці поза його межами
+  window.onclick = function(event) {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function() {
     const forms = {
       create: document.getElementById("create-ticket-form"),
@@ -162,7 +207,7 @@
         if (queueData.length > 0) {
           queueData.forEach(ticket => {
             const div = document.createElement("div");
-            div.innerText = `Талон: ${ticket.ticketNumber}, Послуга: ${ticket.serviceEntity.name}, Статус: ${ticket.status}`;
+            div.innerText = `Талон: ${ticket.ticketNumber}, Послуга: ${ticket.serviceName}, Статус: ${ticket.status}`;
             currentQueueDiv.appendChild(div);
 
             queueSelects.forEach(select => {
@@ -185,7 +230,7 @@
         const currentClientData = await fetchJSON(`/queues/current-client/${workplaceId}`);
 
         if (currentClientData) {
-          currentClientDiv.innerText = `Клієнт: ${currentClientData.ticketNumber}, Послуга: ${currentClientData.serviceEntity.name}`;
+          currentClientDiv.innerText = `Клієнт: ${currentClientData.ticketNumber}, Послуга: ${currentClientData.serviceName}`;
           currentClientDiv.dataset.currentTicketId = currentClientData.id;
         } else {
           currentClientDiv.innerText = "Клієнт не обслуговується.";

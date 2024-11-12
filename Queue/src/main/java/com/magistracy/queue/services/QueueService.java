@@ -39,7 +39,7 @@ public class QueueService {
     }
 
     // Автоматичне переміщення попередніх записів у чергу
-    @Scheduled(cron = "0 0/15 * * * *") // Що 15 хвилин
+    @Scheduled(cron = "0 0/1 * * * *") // Що 15 хвилин
     public void autoMoveAppointmentsToQueue() {
         LocalDate today = LocalDate.now();
         moveAppointmentsToQueue(today);

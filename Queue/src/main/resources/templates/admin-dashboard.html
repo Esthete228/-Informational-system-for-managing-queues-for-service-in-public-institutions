@@ -1,18 +1,278 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Адміністративна панель</title>
     <link rel="stylesheet" href="/styles.css">
+    <style>
+        .submenu {
+            display: none;
+        }
+        .modal {
+            display: none; /* Відображення через flexbox для центрованого контенту */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Затемнення фону */
+            justify-content: center; /* Горизонтальне центровання */
+            align-items: center; /* Вертикальне центровання */
+            z-index: 1000; /* Високий рівень для накриття контенту */
+        }
+
+        /* Стиль для контенту модального вікна */
+        .modal-content {
+            position: relative;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px; /* Максимальна ширина форми */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.3s ease; /* Анімація при відкритті */
+        }
+
+        /* Анімація для плавного з'явлення */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Кнопка закриття */
+        .close {
+            font-size: 25px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        /* Адаптивність для невеликих екранів */
+        @media screen and (max-width: 768px) {
+            .modal-content {
+                width: 90%;
+            }
+        }
+    </style>
 </head>
 <body>
 <h1>Адміністративна панель</h1>
+<div class="top-bar">
+    <div id="admin-buttons" class="top-bar-left">
+        <button class="button theme" onclick="openSubMenu('services-menu')">Керування послугами</button>
+        <button class="button theme" onclick="openSubMenu('workplaces-menu')">Керування робочими місцями</button>
+        <button class="button theme" onclick="openSubMenu('employees-menu')">Керування працівниками</button>
+        <button class="button theme" onclick="openSubMenu('reports-menu')">Звіти</button>
+    </div>
+    <div class="top-bar-right">
+        <button onclick="window.location.href='/logout'">Вийти з облікового запису</button>
+    </div>
+</div>
 
-<!-- Кнопки для переходу на окремі сторінки -->
-<button onclick="window.location.href='/admin-dashboard/services'">Керування послугами</button>
-<button onclick="window.location.href='/admin-dashboard/employees'">Керування працівниками</button>
-<button onclick="window.location.href='/admin-dashboard/workplaces'">Керування робочими місцями</button>
-<button onclick="window.location.href='/admin-dashboard/reports'">Керування звітністю про чергу</button>
+<!-- Підменю -->
+<div class="top-bar">
+<div class="submenu" id="services-menu">
+    <button class="button" onclick="openModal('addServiceModal')">Додати послугу</button>
+    <button class="button" onclick="openModal('updateServiceModal')">Редагувати послугу</button>
+    <button class="button" onclick="openModal('deleteServiceModal')">Видалити послугу</button>
+</div>
+
+<div class="submenu" id="workplaces-menu">
+    <button class="button" onclick="openModal('addWorkplaceModal')">Додати робоче місце</button>
+    <button class="button" onclick="openModal('updateWorkplaceModal')">Оновити робоче місце</button>
+    <button class="button" onclick="openModal('deleteWorkplaceModal')">Видалити робоче місце</button>
+</div>
+
+<div class="submenu" id="employees-menu">
+    <button class="button" onclick="openModal('addEmployeeModal')">Додати працівника</button>
+    <button class="button" onclick="openModal('updateEmployeeModal')">Оновити працівника</button>
+    <button class="button" onclick="openModal('deleteEmployeeModal')">Видалити працівника</button>
+</div>
+
+<div class="submenu" id="reports-menu">
+    <button class="button" onclick="openModal('generateReportModal')">Згенерувати звіт</button>
+</div>
+</div>
+
+<!-- Модальні вікна -->
+<!-- Послуги -->
+<div class="modal" id="addServiceModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('addServiceModal')">&times;</span>
+        <h2>Додати нову послугу</h2>
+        <form id="addServiceForm">
+            <input type="text" id="serviceName" placeholder="Назва послуги" required>
+            <input type="text" id="serviceDescription" placeholder="Опис послуги" required>
+            <button type="submit" class="button theme">Додати послугу</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="updateServiceModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('updateServiceModal')">&times;</span>
+        <h2>Оновити існуючу послугу</h2>
+        <form id="updateServiceForm">
+            <select id="serviceIdToUpdate" required>
+                <option value="">Виберіть послугу</option>
+                <!-- Динамічно завантажимо список послуг -->
+            </select>
+            <input type="text" id="updatedServiceName" placeholder="Нова назва послуги" required>
+            <input type="text" id="updatedServiceDescription" placeholder="Новий опис послуги" required>
+            <button type="submit" class="button theme">Оновити послугу</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="deleteServiceModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('deleteServiceModal')">&times;</span>
+        <h2>Видалити послугу</h2>
+        <form id="deleteServiceForm">
+            <select id="serviceIdToDelete" required>
+                <option value="">Виберіть послугу</option>
+                <!-- Динамічно завантажимо список послуг -->
+            </select>
+            <button type="submit" class="button theme">Видалити послугу</button>
+        </form>
+    </div>
+</div>
+
+<!-- Робочі місця -->
+<div class="modal" id="addWorkplaceModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('addWorkplaceModal')">&times;</span>
+        <h2>Додати робоче місце</h2>
+        <form id="addWorkplaceForm">
+            <input type="text" id="workplaceName" placeholder="Назва робочого місця" required>
+            <button type="submit" class="button theme">Додати робоче місце</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="updateWorkplaceModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('updateWorkplaceModal')">&times;</span>
+        <h2>Оновити робоче місце</h2>
+        <form id="updateWorkplaceForm">
+            <select id="workplaceIdToUpdate" required>
+                <option value="">Виберіть робоче місце</option>
+                <!-- Динамічно завантажимо список робочих місць -->
+            </select>
+            <input type="text" id="updatedWorkplaceName" placeholder="Нова назва робочого місця" required>
+            <button type="submit" class="button theme">Оновити робоче місце</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="deleteWorkplaceModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('deleteWorkplaceModal')">&times;</span>
+        <h2>Видалити робоче місце</h2>
+        <form id="deleteWorkplaceForm">
+            <select id="workplaceIdToDelete" required>
+                <option value="">Виберіть робоче місце</option>
+                <!-- Динамічно завантажимо список робочих місць -->
+            </select>
+            <button type="submit" class="button theme">Видалити робоче місце</button>
+        </form>
+    </div>
+</div>
+
+<!-- Працівники -->
+<div class="modal" id="addEmployeeModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('addEmployeeModal')">&times;</span>
+        <h2>Додати працівника</h2>
+        <form id="addEmployeeForm">
+            <input type="text" id="employeeUsername" placeholder="Ім'я користувача" required>
+            <input type="password" id="employeePassword" placeholder="Пароль" required>
+            <select id="employeeRole" required>
+                <option value="">Виберіть роль</option>
+                <option value="employee">Працівник</option>
+                <option value="admin">Адміністратор</option>
+            </select>
+            <select id="assignedWorkplace" required>
+                <option value="">Виберіть робоче місце</option>
+                <!-- Динамічно завантажимо список робочих місць -->
+            </select>
+            <button type="submit" class="button theme">Додати працівника</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="updateEmployeeModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('updateEmployeeModal')">&times;</span>
+        <h2>Оновити працівника</h2>
+        <form id="updateEmployeeForm">
+            <select id="employeeIdToUpdate" required>
+                <option value="">Виберіть працівника</option>
+                <!-- Динамічно завантажимо список працівників -->
+            </select>
+            <input type="text" id="updatedEmployeeUsername" placeholder="Нове ім'я користувача" required>
+            <input type="password" id="updatedEmployeePassword" placeholder="Новий пароль" required>
+            <select id="updatedEmployeeRole" required>
+                <option value="">Виберіть нову роль</option>
+                <option value="employee">Працівник</option>
+                <option value="admin">Адміністратор</option>
+            </select>
+            <select id="updatedAssignedWorkplace" required>
+                <option value="">Оновити робоче місце</option>
+                <!-- Динамічно завантажимо список робочих місць -->
+            </select>
+            <button type="submit" class="button theme">Оновити працівника</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="deleteEmployeeModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('deleteEmployeeModal')">&times;</span>
+        <h2>Видалити працівника</h2>
+        <form id="deleteEmployeeForm">
+            <select id="employeeIdToDelete" required>
+                <option value="">Виберіть працівника</option>
+                <!-- Динамічно завантажимо список працівників -->
+            </select>
+            <button type="submit" class="button theme">Видалити працівника</button>
+        </form>
+    </div>
+</div>
+
+<!-- Звіти -->
+<div class="modal" id="generateReportModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('generateReportModal')">&times;</span>
+        <h2>Згенерувати звіт</h2>
+        <form id="report-form">
+            <label for="startDate">Початок періоду:</label>
+            <input type="datetime-local" id="startDate" name="startDate" required><br><br>
+            <label for="endDate">Кінець періоду:</label>
+            <input type="datetime-local" id="endDate" name="endDate" required><br><br>
+            <button type="submit" class="button theme">Згенерувати звіт</button>
+        </form>
+
+        <hr>
+
+        <div id="report-results" style="display: none;">
+            <h2>Звіт</h2>
+            <p id="totalTickets"></p>
+            <p id="averageWaitingTime"></p>
+            <a id="download-link" href="#" download>Скачати звіт</a>
+        </div>
+    </div>
+</div>
+
+<script src="/admin-panel.js"></script>
 </body>
 </html>
