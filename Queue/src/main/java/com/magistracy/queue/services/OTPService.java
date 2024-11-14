@@ -71,6 +71,7 @@ public class OTPService {
 
                 // Check if OTP has expired
                 if (otpCodeEntity.getExpirationTime().isBefore(LocalDateTime.now())) {
+                    logger.debug("OTP for phone {} has expired.", phoneNumber);
                     return false; // OTP expired
                 }
 
@@ -78,10 +79,16 @@ public class OTPService {
                 String decryptedOtp = AESUtils.decrypt(otpCodeEntity.getOtpCode(), secretKey);
                 logger.debug("Decrypted OTP for phone {}: {}", phoneNumber, decryptedOtp);  // Log the decrypted OTP
 
-                return decryptedOtp.equals(otp);  // Compare the decrypted OTP with the entered OTP
+                // Check if the entered OTP matches the decrypted OTP
+                if (decryptedOtp.equals(otp)) {
+                    // OTP matched, delete the OTP code from the database
+                    otpCodeRepository.delete(otpCodeEntity);  // Delete the OTP from the database
+                    logger.debug("OTP successfully verified and deleted for phone {}.", phoneNumber);
+                    return true;  // OTP matched and deleted successfully
+                }
             }
 
-            return false;  // No OTP found for the phone number
+            return false;  // No OTP found for the phone number or OTP didn't match
         } catch (Exception e) {
             logger.error("Error verifying OTP for phone {}: {}", phoneNumber, e.getMessage());
             return false;
