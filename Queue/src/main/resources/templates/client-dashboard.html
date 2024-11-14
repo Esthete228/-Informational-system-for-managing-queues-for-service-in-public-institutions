@@ -80,13 +80,12 @@
         <label for="serviceId">Виберіть послугу:</label>
         <select id="serviceId" required>
           <option value="">Виберіть послугу</option>
-          <!-- Цей список буде заповнений з бази даних -->
         </select>
         <label for="appointmentTime">Час запису:</label>
-        <input type="datetime-local" id="appointmentTime" required> <!-- Вибір часу запису -->
-        <input type="hidden" id="clientId" value="${clientId}"> <!-- Припустимо, ви зберігаєте clientId у сесії -->
+        <input type="datetime-local" id="appointmentTime" required>
+        <input type="hidden" id="clientId" value="${clientId}">
         <button type="submit" class="button">Записатися</button>
-        <button type="button" class="button" onclick="closeModal('rescheduleModal')">Скасувати</button>
+        <button type="button" class="button" onclick="closeModal('create-appointment-modal')">Скасувати</button>
     </form>
   </div>
 </div>

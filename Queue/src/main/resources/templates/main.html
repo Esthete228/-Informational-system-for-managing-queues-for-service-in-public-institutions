@@ -48,14 +48,13 @@
             color: #d32f2f;
             margin-top: 20px;
         }
-
     </style>
 </head>
 <body>
 
 <div class="top-bar">
     <div class="top-bar-left">
-        <p>Оберіть роль: <button onclick="window.location.href='/login-employee'" class="bar-item theme-l1 button" >Я працівник</button>
+        <p>Оберіть роль: <button onclick="window.location.href='/login-employee'" class="bar-item theme-l1 button">Я працівник</button>
             <button onclick="window.location.href='/login-client'" class="bar-item theme-l2 button">Я клієнт</button></p>
     </div>
 </div>
@@ -66,7 +65,14 @@
 <div id="sound-alert" class="sound-alert"></div>
 
 <script>
-    let lastTicketNumber = null; // Змінна для збереження останнього обробленого талону
+    let lastTicketNumber = null;
+
+    // Функція для безпечного екранування даних
+    function sanitizeHTML(text) {
+        const element = document.createElement('div');
+        element.textContent = text;
+        return element.innerHTML;
+    }
 
     // Функція для підключення до SSE
     function connectToQueueUpdates() {
@@ -89,51 +95,66 @@
         queueDiv.innerHTML = '';
 
         if (queue.length === 0) {
-            queueDiv.innerHTML = '<p>Черга пуста.</p>';
+            queueDiv.textContent = 'Черга пуста.';
         } else {
             const table = document.createElement('table');
-            const header = `<tr><th>Талон</th><th>Робоче місце</th></tr>`;
-            table.innerHTML = header;
+            const header = document.createElement('tr');
+            const th1 = document.createElement('th');
+            const th2 = document.createElement('th');
+
+            th1.textContent = 'Талон';
+            th2.textContent = 'Робоче місце';
+
+            header.appendChild(th1);
+            header.appendChild(th2);
+            table.appendChild(header);
 
             queue.forEach(entry => {
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${entry.ticketNumber}</td>
-                    <td>${entry.workplace?.workplaceName || entry.workplace.id}</td>
-                `;
+                const ticketCell = document.createElement('td');
+                const workplaceCell = document.createElement('td');
+
+                // Екрануємо значення перед вставкою
+                ticketCell.textContent = sanitizeHTML(entry.ticketNumber);
+                workplaceCell.textContent = sanitizeHTML(entry.workplace?.workplaceName || entry.workplace.id);
+
+                row.appendChild(ticketCell);
+                row.appendChild(workplaceCell);
                 table.appendChild(row);
             });
 
             queueDiv.appendChild(table);
 
             // Оновлюємо звукове сповіщення для поточного талону
-            const currentClient = queue[0]; // Поточний клієнт (перший у черзі)
+            const currentClient = queue[0];
 
-            // Перевіряємо, чи з'явився новий клієнт
+            // Перевірка на новий талон
             if (currentClient.ticketNumber !== lastTicketNumber) {
                 playSoundAlert(currentClient);
-                lastTicketNumber = currentClient.ticketNumber; // Оновлюємо останній оброблений талон
+                lastTicketNumber = currentClient.ticketNumber;
             }
         }
     }
 
-    // Функція для програвання звукового сповіщення та відображення повідомлення на 5 секунд
+    // Функція для програвання звукового сповіщення та відображення повідомлення
     function playSoundAlert(client) {
         const soundAlertElement = document.getElementById('sound-alert');
-        soundAlertElement.innerHTML = `Шановний клієнте з талоном №${client.ticketNumber}, пройдіть будь ласка до робочого місця №${client.workplace?.workplaceName || client.workplace.id}`;
-        soundAlertElement.style.display = 'block'; // Показуємо повідомлення
 
-        // Програвання звуку
+        // Екрануємо дані для виводу
+        const ticketNumber = sanitizeHTML(client.ticketNumber);
+        const workplaceName = sanitizeHTML(client.workplace?.workplaceName || client.workplace.id);
+
+        soundAlertElement.textContent = `Шановний клієнте з талоном №${ticketNumber}, пройдіть будь ласка до робочого місця №${workplaceName}`;
+        soundAlertElement.style.display = 'block';
+
         const audio = new Audio('/sounds/message.wav');
         audio.play();
 
-        // Приховуємо повідомлення через 5 секунд
         setTimeout(() => {
             soundAlertElement.style.display = 'none';
         }, 5000);
     }
 
-    // Ініціалізація сторінки
     connectToQueueUpdates();
 </script>
 </body>

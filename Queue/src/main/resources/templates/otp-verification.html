@@ -11,7 +11,8 @@
 <form action="/verify-otp" method="POST">
     <input type="hidden" name="phone" th:value="${phone}">
     <label for="otp">OTP:</label>
-    <input type="text" id="otp" name="otp" required><br>
+    <!-- Валідація на клієнтській стороні: лише 6 цифр -->
+    <input type="text" id="otp" name="otp" required pattern="^[0-9]{6}$" title="Введіть 6-значний код"><br>
     <button type="submit" class="button">Підтвердити</button>
 </form>
 </body>

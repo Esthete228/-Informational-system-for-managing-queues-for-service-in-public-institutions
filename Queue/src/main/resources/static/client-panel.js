@@ -8,13 +8,14 @@ fetch('/appointments/client-appointments')
         } else {
             appointments.forEach(appointment => {
                 const appointmentElement = document.createElement('div');
+                appointmentElement.id = `appointment-${appointment.id}`; // Унікальний ID для кожного запису
                 appointmentElement.innerHTML = `
-            <strong>Послуга:</strong> ${appointment.serviceEntity.serviceName}<br>
-            <strong>Час запису:</strong> ${new Date(appointment.appointmentTime).toLocaleString()}<br>
-            <button onclick="openModal('rescheduleModal', ${appointment.id})" class="btn-primary">Перезапис</button>
-            <button onclick="deleteAppointment(${appointment.id})" class="btn-secondary">Видалити</button>
-            <hr>
-          `;
+                    <strong>Послуга:</strong> ${appointment.serviceEntity.serviceName}<br>
+                    <strong>Час запису:</strong> ${new Date(appointment.appointmentTime).toLocaleString()}<br>
+                    <button onclick="openModal('rescheduleModal', ${appointment.id})" class="btn-primary">Перезапис</button>
+                    <button onclick="deleteAppointment(${appointment.id})" class="btn-secondary">Видалити</button>
+                    <hr>
+                `;
                 appointmentsDiv.appendChild(appointmentElement);
             });
         }
@@ -115,9 +116,19 @@ function deleteAppointment(appointmentId) {
     })
         .then(response => {
             if (response.ok) {
-                location.reload();
+                // Знайдемо елемент запису, який потрібно видалити, і видалимо його з DOM
+                const appointmentElement = document.getElementById(`appointment-${appointmentId}`);
+                if (appointmentElement) {
+                    appointmentElement.remove();
+                }
+                alert('Запис успішно видалено!');
             } else {
-                alert("Не вдалося видалити запис. Спробуйте ще раз.");
+                // Якщо сервер повертає помилку, вивести повідомлення
+                response.text().then(text => alert('Не вдалося видалити запис: ' + text));
             }
+        })
+        .catch(error => {
+            console.error('Помилка при видаленні запису:', error);
+            alert("Не вдалося видалити запис. Спробуйте ще раз.");
         });
 }

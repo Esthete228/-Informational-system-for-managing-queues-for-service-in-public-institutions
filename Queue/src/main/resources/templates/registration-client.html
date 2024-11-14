@@ -10,9 +10,9 @@
 <h1>Реєстрація клієнта</h1>
 <form action="/add-client" method="POST">
     <label for="name">ПІБ:</label>
-    <input type="text" id="name" name="name" required><br>
+    <input type="text" id="name" name="name" required pattern="[A-Za-zА-Яа-яІіЇїЄє\s]+" title="Введіть коректне ім'я"><br>
     <label for="phone">Номер телефону:</label>
-    <input type="text" id="phone" name="phone" required><br>
+    <input type="text" id="phone" name="phone" required pattern="\+?[0-9\s]{10,15}" title="Введіть коректний номер телефону"><br>
     <button type="submit" class="button">Зареєструватися</button>
 </form>
 </body>

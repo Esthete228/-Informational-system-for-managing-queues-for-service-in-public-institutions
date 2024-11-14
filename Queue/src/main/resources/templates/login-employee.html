@@ -10,15 +10,12 @@
 <h1>Логін працівника</h1>
 <form action="/authenticate-employee" method="POST">
     <label for="username">Ім'я користувача:</label>
-    <input type="text" id="username" name="username" required><br>
+    <input type="text" id="username" name="username" required pattern="^[a-zA-Z0-9_-]{3,16}$" title="Тільки букви, цифри, підкреслення та дефіси, довжина від 3 до 16 символів."><br>
 
     <label for="password">Пароль:</label>
-    <input type="password" id="password" name="password" required><br>
+    <input type="password" id="password" name="password" required pattern="^[a-zA-Z0-9_-]{3,16}$" title="Тільки букви, цифри, підкреслення та дефіси, довжина від 3 до 16 символів."><br>
 
     <button type="submit" class="button">Увійти</button>
-
-    <!-- Виводимо повідомлення про помилку, якщо є -->
-    <p th:if="${error}" th:text="${error}" style="color:red;"></p>
 </form>
 </body>
 </html>

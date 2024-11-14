@@ -8,6 +8,8 @@ import com.magistracy.queue.services.EmployeeService;
 import com.magistracy.queue.services.WorkplaceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,6 +35,8 @@ public class EmployeeController {
         this.workplaceRepository = workplaceRepository;
     }
 
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+
     // Отримати всіх працівників
     @GetMapping("/all-employees")
     public ResponseEntity<List<Employee>> getAllEmployees() {
@@ -52,7 +56,7 @@ public class EmployeeController {
 
         Employee newEmployee = new Employee();
         newEmployee.setUsername(username);
-        newEmployee.setPassword(password);
+        newEmployee.setPassword(passwordEncoder.encode(password));  // Шифруємо пароль
         newEmployee.setRole(role);
         newEmployee.setWorkplace(workplace); // Прив'язуємо працівника до робочого місця
 

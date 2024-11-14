@@ -10,10 +10,10 @@
 <h1>Вхід для клієнта</h1>
 <form action="/send-otp" method="POST">
   <label for="phone">Номер телефону:</label>
-  <input type="text" id="phone" name="phone" required><br>
+  <input type="text" id="phone" name="phone" required pattern="\+?[0-9\s]{10,15}" title="Введіть коректний номер телефону"><br>
   <button type="submit" class="button">Отримати код для входу</button>
   <p>Ще не зареєстровані?</p>
-  <button onclick="window.location.href='/register-client'" class="button">Реєстрація</button>
+  <button onclick="window.location.href='/register-client'" class="button" type="button">Реєстрація</button>
 </form>
 </body>
 </html>

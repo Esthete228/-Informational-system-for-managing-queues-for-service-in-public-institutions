@@ -2,8 +2,13 @@ package com.magistracy.queue.services;
 
 import com.magistracy.queue.entities.OtpCodeEntity;
 import com.magistracy.queue.repositories.OtpCodeRepository;
+import com.magistracy.queue.security.AESUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
@@ -11,42 +16,75 @@ import java.util.Random;
 @Service
 public class OTPService {
 
+    private static final Logger logger = LoggerFactory.getLogger(OTPService.class);
+    private final SecretKey secretKey;
     private final OtpCodeRepository otpCodeRepository;
 
-    public OTPService(OtpCodeRepository otpCodeRepository) {
+    @Autowired
+    public OTPService(OtpCodeRepository otpCodeRepository) throws Exception {
+        this.secretKey = AESUtils.generateKey();  // Secret key for encryption and decryption
         this.otpCodeRepository = otpCodeRepository;
     }
 
-    // Генерація одноразового коду
+    // Method to generate OTP
     public String generateOTP() {
         Random random = new Random();
-        return String.format("%06d", random.nextInt(999999));  // 6-значний код
+        return String.format("%06d", random.nextInt(1000000));  // Generate 6-digit OTP
     }
 
-    // Збереження OTP в базу даних
+    // Encrypt OTP code and log both encrypted and decrypted version
+    public String encryptAndLogOTP(String otpCode) throws Exception {
+        // Encrypt OTP
+        String encryptedOtp = AESUtils.encrypt(otpCode, secretKey);
+
+        // Log the encrypted OTP and its decrypted value for debugging
+        String decryptedOtp = AESUtils.decrypt(encryptedOtp, secretKey);
+
+        // Log encrypted OTP and its decrypted version for debug purposes
+        logger.debug("Encrypted OTP: {}", encryptedOtp);  // Log the encrypted OTP
+        logger.debug("Decrypted OTP (for logging purposes): {}", decryptedOtp);  // Log the decrypted OTP for debugging
+
+        return encryptedOtp;  // Return the encrypted OTP to be saved in the database
+    }
+
+    // Save OTP code to the database (encrypted)
     public void saveOtp(String phoneNumber, String otpCode) {
-        OtpCodeEntity otpCodeEntity = new OtpCodeEntity();
-        otpCodeEntity.setPhoneNumber(phoneNumber);
-        otpCodeEntity.setOtpCode(otpCode);
-        otpCodeEntity.setExpirationTime(LocalDateTime.now().plusMinutes(5));  // Код дійсний 5 хвилин
-
-        otpCodeRepository.save(otpCodeEntity);
+        try {
+            String encryptedOtp = encryptAndLogOTP(otpCode);  // Encrypt OTP and log the info
+            OtpCodeEntity otpCodeEntity = new OtpCodeEntity();
+            otpCodeEntity.setPhoneNumber(phoneNumber);
+            otpCodeEntity.setOtpCode(encryptedOtp);  // Save encrypted OTP to database
+            otpCodeEntity.setExpirationTime(LocalDateTime.now().plusMinutes(5));  // Set expiration time (5 mins)
+            otpCodeRepository.save(otpCodeEntity);  // Save OTP entity to the database
+        } catch (Exception e) {
+            logger.error("Error encrypting OTP for phone {}: {}", phoneNumber, e.getMessage());
+        }
     }
 
-    // Перевірка OTP
-    public boolean verifyOtp(String phoneNumber, String otpCode) {
-        Optional<OtpCodeEntity> otpRecord = otpCodeRepository.findByPhoneNumber(phoneNumber);
-        if (otpRecord.isPresent()) {
-            OtpCodeEntity otpCodeEntity = otpRecord.get();
-            boolean isValid = otpCodeEntity.getOtpCode().equals(otpCode) &&
-                    otpCodeEntity.getExpirationTime().isAfter(LocalDateTime.now());
+    // Verify OTP by decrypting and comparing it
+    public boolean verifyOtp(String phoneNumber, String otp) {
+        try {
+            Optional<OtpCodeEntity> otpCodeEntityOptional = otpCodeRepository.findByPhoneNumber(phoneNumber);
 
-            if (isValid) {
-                // Видаляємо OTP-код після успішної перевірки
-                otpCodeRepository.delete(otpCodeEntity);
-                return true;
+            if (otpCodeEntityOptional.isPresent()) {
+                OtpCodeEntity otpCodeEntity = otpCodeEntityOptional.get();
+
+                // Check if OTP has expired
+                if (otpCodeEntity.getExpirationTime().isBefore(LocalDateTime.now())) {
+                    return false; // OTP expired
+                }
+
+                // Decrypt the OTP from the database for comparison
+                String decryptedOtp = AESUtils.decrypt(otpCodeEntity.getOtpCode(), secretKey);
+                logger.debug("Decrypted OTP for phone {}: {}", phoneNumber, decryptedOtp);  // Log the decrypted OTP
+
+                return decryptedOtp.equals(otp);  // Compare the decrypted OTP with the entered OTP
             }
+
+            return false;  // No OTP found for the phone number
+        } catch (Exception e) {
+            logger.error("Error verifying OTP for phone {}: {}", phoneNumber, e.getMessage());
+            return false;
         }
-        return false;  // Код не знайдено або прострочений
     }
 }

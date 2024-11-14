@@ -9,6 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,6 +33,8 @@ public class AuthController {
         this.otpService = otpService;
         this.employeeRepository = employeeRepository;
     }
+
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
 
     @GetMapping("/")
     public String mainPage() {
@@ -86,7 +90,7 @@ public class AuthController {
     @PostMapping("/authenticate-employee")
     public ModelAndView authenticateEmployee(String username, String password, HttpSession session) {
         Optional<Employee> employee = employeeRepository.findByUsername(username);
-        if (employee.isPresent() && employee.get().getPassword().equals(password)) {
+        if (employee.isPresent() && passwordEncoder.matches(password, employee.get().getPassword())) {
             String role = employee.get().getRole();
 
             // Зберігаємо дані в сесії
