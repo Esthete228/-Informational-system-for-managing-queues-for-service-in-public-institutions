@@ -3,6 +3,7 @@ package com.magistracy.queue.services;
 import com.magistracy.queue.entities.Queue;
 import com.magistracy.queue.entities.Report;
 import com.magistracy.queue.repositories.QueueRepository;
+import com.magistracy.queue.repositories.ReportRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,15 +15,17 @@ import java.util.List;
 public class ReportService {
 
     private final QueueRepository queueRepository;
+    private final ReportRepository reportRepository;
 
     @Autowired
-    public ReportService(QueueRepository queueRepository) {
+    public ReportService(QueueRepository queueRepository, ReportRepository reportRepository) {
         this.queueRepository = queueRepository;
+        this.reportRepository = reportRepository;
     }
 
-    // Створення статистики за обраний період
+    // Generate and store the report in the database
     public Report generateReport(LocalDateTime startDate, LocalDateTime endDate) {
-        // Отримуємо черги за обраний період
+        // Retrieve the queues for the given period
         List<Queue> queues = queueRepository.findByCreatedAtBetween(startDate, endDate);
 
         long totalTickets = queues.size();
@@ -57,7 +60,15 @@ public class ReportService {
 
         long averageWaitingTime = totalTickets == 0 ? 0 : totalWaitingTime / totalTickets;
 
-        return new Report(totalTickets, averageWaitingTime, maxWaitingTime, minWaitingTime);
+        // Create a new report entity and store it
+        Report report = new Report(totalTickets, averageWaitingTime, maxWaitingTime, minWaitingTime);
+
+        // Save the report to the database
+        return reportRepository.save(report);
+    }
+
+    // Method to delete the report after CSV generation
+    public void deleteReport(Long reportId) {
+        reportRepository.deleteById(reportId);
     }
 }
-

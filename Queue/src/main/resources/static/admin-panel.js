@@ -148,10 +148,14 @@ document.getElementById('report-form').addEventListener('submit', function(event
             if (report) {
                 document.getElementById('totalTickets').innerText = `Кількість талонів: ${report.totalTickets}`;
                 document.getElementById('averageWaitingTime').innerText = `Середній час очікування: ${report.averageWaitingTime} хвилин`;
-
+                document.getElementById('maxWaitingTime').innerText = `Максимальний час очікування: ${report.maxWaitingTime} хвилин`;
+                document.getElementById('minWaitingTime').innerText = `Мінімальний час очікування: ${report.minWaitingTime} хвилин`;
                 // Створення посилання для завантаження звіту у форматі CSV
                 const downloadLink = document.getElementById('download-link');
                 downloadLink.href = `data:text/csv;charset=utf-8,${encodeURIComponent(report.csvContent)}`;
+
+                // Зберігаємо ID звіту для подальшого видалення після завантаження
+                downloadLink.setAttribute('data-report-id', report.reportId);
 
                 // Показуємо результати
                 document.getElementById('report-results').style.display = 'block';
@@ -163,6 +167,25 @@ document.getElementById('report-form').addEventListener('submit', function(event
             console.error('Error generating report:', error);
             alert('Сталася помилка при генерації звіту.');
         });
+});
+
+// Обробка кліку на посилання для завантаження та видалення звіту
+document.getElementById('download-link').addEventListener('click', function(event) {
+    const reportId = event.target.getAttribute('data-report-id');
+
+    if (reportId) {
+        // Відправляємо запит на сервер для видалення звіту після завантаження
+        fetch(`/reports/delete/${reportId}`, {
+            method: 'DELETE'
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Report deleted:', data);
+            })
+            .catch(error => {
+                console.error('Error deleting report:', error);
+            });
+    }
 });
 
 // Додати нового працівника

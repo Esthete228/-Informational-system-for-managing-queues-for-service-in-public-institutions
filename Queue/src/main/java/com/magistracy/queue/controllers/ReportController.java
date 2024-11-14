@@ -21,32 +21,52 @@ public class ReportController {
         this.reportService = reportService;
     }
 
-    // Endpoint to generate the report without using ReportRequest and ReportResponse classes
+    // Endpoint to generate the report and return it as an object
     @PostMapping("/generate")
     public ResponseEntity<Map<String, Object>> generateReport(@RequestBody Map<String, String> request) {
-        // Extract startDate and endDate from the request map
-        LocalDateTime startDate = LocalDateTime.parse(request.get("startDate"));
-        LocalDateTime endDate = LocalDateTime.parse(request.get("endDate"));
+        try {
+            // Log the incoming request data for debugging
+            System.out.println("Start Date: " + request.get("startDate"));
+            System.out.println("End Date: " + request.get("endDate"));
 
-        // Generate the report
-        Report report = reportService.generateReport(startDate, endDate);
+            LocalDateTime startDate = LocalDateTime.parse(request.get("startDate"));
+            LocalDateTime endDate = LocalDateTime.parse(request.get("endDate"));
 
-        // Generate the CSV content for download
-        byte[] fileContent = generateReportFile(report);
+            // Log parsed dates
+            System.out.println("Parsed Start Date: " + startDate);
+            System.out.println("Parsed End Date: " + endDate);
 
-        // Prepare the response without using ReportResponse
-        Map<String, Object> response = Map.of(
-                "totalTickets", report.getTotalTickets(),
-                "averageWaitingTime", report.getAverageWaitingTime(),
-                "maxWaitingTime", report.getMaxWaitingTime(),
-                "minWaitingTime", report.getMinWaitingTime(),
-                "csvContent", new String(fileContent, StandardCharsets.UTF_8)
-        );
+            // Generate the report and store it in the database
+            Report report = reportService.generateReport(startDate, endDate);
 
-        return ResponseEntity.ok(response);
+            // Generate the CSV content for download
+            byte[] fileContent = generateReportFile(report);
+
+            // Prepare the response with the generated report data
+            Map<String, Object> response = Map.of(
+                    "totalTickets", report.getTotalTickets(),
+                    "averageWaitingTime", report.getAverageWaitingTime(),
+                    "maxWaitingTime", report.getMaxWaitingTime(),
+                    "minWaitingTime", report.getMinWaitingTime(),
+                    "csvContent", new String(fileContent, StandardCharsets.UTF_8),
+                    "reportId", report.getId()
+            );
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace(); // Log the exception
+            return ResponseEntity.status(500).body(Map.of("error", "Invalid date format"));
+        }
     }
 
-    // Helper method to generate CSV content
+    // Endpoint to delete the report after download
+    @DeleteMapping("/delete/{reportId}")
+    public ResponseEntity<String> deleteReport(@PathVariable Long reportId) {
+        reportService.deleteReport(reportId);
+        return ResponseEntity.ok("Report deleted successfully");
+    }
+
+    // Helper method to generate CSV content from the report
     private byte[] generateReportFile(Report report) {
         String csvContent = "Total Tickets, Average Waiting Time (minutes), Max Waiting Time (minutes), Min Waiting Time (minutes)\n" +
                 report.getTotalTickets() + ", " +

@@ -14,16 +14,16 @@ import java.util.Map;
 @RequestMapping("/services")
 public class ServiceController {
 
-    private final ServiceEntityRepository serviceEntityRepository;
+    private final ServiceManagementService serviceManagementService;
 
-    public ServiceController(ServiceEntityRepository serviceEntityRepository, WorkplaceRepository workplaceRepository, ServiceManagementService serviceManagementService) {
-        this.serviceEntityRepository = serviceEntityRepository;
+    public ServiceController(ServiceManagementService serviceManagementService) {
+        this.serviceManagementService = serviceManagementService;
     }
 
     // Отримати всі послуги
     @GetMapping("/all-services")
     public ResponseEntity<List<ServiceEntity>> getAllServices() {
-        List<ServiceEntity> services = serviceEntityRepository.findAll();
+        List<ServiceEntity> services = serviceManagementService.getAllServices();
         return ResponseEntity.ok(services);
     }
 
@@ -37,26 +37,29 @@ public class ServiceController {
         service.setServiceName(serviceName);
         service.setServiceDescription(serviceDescription);
 
-        ServiceEntity savedService = serviceEntityRepository.save(service);
+        ServiceEntity savedService = serviceManagementService.addService(service);
         return ResponseEntity.ok(savedService);
     }
 
     // Оновлення послуги
     @PutMapping("/update-service/{serviceId}")
     public ResponseEntity<ServiceEntity> updateService(@PathVariable Long serviceId, @RequestBody Map<String, Object> payload) {
-        ServiceEntity existingService = serviceEntityRepository.findById(serviceId)
-                .orElseThrow(() -> new RuntimeException("Service not found"));
+        String serviceName = payload.get("serviceName").toString();
+        String serviceDescription = payload.get("serviceDescription").toString();
 
-        existingService.setServiceName(payload.get("serviceName").toString());
-        existingService.setServiceDescription(payload.get("serviceDescription").toString());
+        ServiceEntity serviceEntity = new ServiceEntity();
+        serviceEntity.setId(serviceId);
+        serviceEntity.setServiceName(serviceName);
+        serviceEntity.setServiceDescription(serviceDescription);
 
-        ServiceEntity updatedService = serviceEntityRepository.save(existingService);
+        ServiceEntity updatedService = serviceManagementService.updateService(serviceId, serviceEntity);
         return ResponseEntity.ok(updatedService);
     }
 
+    // Видалення послуги
     @DeleteMapping("/delete-service/{id}")
     public ResponseEntity<Void> deleteService(@PathVariable Long id) {
-        serviceEntityRepository.deleteById(id);
+        serviceManagementService.deleteService(id);
         return ResponseEntity.noContent().build();
     }
 }
