@@ -5,54 +5,136 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Головна сторінка</title>
     <link rel="stylesheet" href="/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-top: 50px;
+        }
+
+        #in-progress-queue {
+            margin-top: 50px;
+            font-size: 36px;
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #in-progress-queue table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 80%;
+            margin: 0 auto;
+        }
+
+        #in-progress-queue th, #in-progress-queue td {
+            padding: 15px;
+            border-bottom: 1px solid #ccc;
+            text-align: center;
+        }
+
+        #in-progress-queue th {
+            background-color: #333;
+            color: #fff;
+        }
+
+        .sound-alert {
+            font-size: 24px;
+            color: #d32f2f;
+            margin-top: 20px;
+        }
+
+    </style>
 </head>
 <body>
 
 <div class="top-bar">
     <div class="top-bar-left">
-        <p>Оберіть роль: <button onclick="window.location.href='/login-employee'" class="bar-item theme-l1">Я працівник</button>
-            <button onclick="window.location.href='/login-client'" class="bar-item theme-l2">Я клієнт</button></p>
+        <p>Оберіть роль: <button onclick="window.location.href='/login-employee'" class="bar-item theme-l1 button" >Я працівник</button>
+            <button onclick="window.location.href='/login-client'" class="bar-item theme-l2 button">Я клієнт</button></p>
     </div>
 </div>
 
-<hr>
+<h1>Поточна черга</h1>
 
-<h2>Поточна черга</h2>
 <div id="in-progress-queue"></div>
+<div id="sound-alert" class="sound-alert"></div>
 
 <script>
-    function loadInProgressQueue() {
-        fetch('/queues/in-progress-queue')
-            .then(response => response.json())
-            .then(queue => {
-                const queueDiv = document.getElementById('in-progress-queue');
-                queueDiv.innerHTML = '';
+    let lastTicketNumber = null; // Змінна для збереження останнього обробленого талону
 
-                if (queue.length === 0) {
-                    queueDiv.innerHTML = '<p>Черга пуста.</p>';
-                } else {
-                    const table = document.createElement('table');
-                    const header = `<tr><th>Талон</th><th>Робоче місце</th></tr>`;
-                    table.innerHTML = header;
+    // Функція для підключення до SSE
+    function connectToQueueUpdates() {
+        const eventSource = new EventSource('/queues/queue-updates');
 
-                    queue.forEach(entry => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${entry.ticketNumber}</td>
-                            <td>${entry.workplace?.workplaceName || entry.workplace.id}</td>
-                        `;
-                        table.appendChild(row);
-                    });
+        eventSource.onmessage = function(event) {
+            const queue = JSON.parse(event.data);
+            updateQueueTable(queue);
+        };
 
-                    queueDiv.appendChild(table);
-                }
-            })
-            .catch(error => console.error('Error loading queue:', error));
+        eventSource.onerror = function() {
+            console.error('Error receiving SSE');
+            eventSource.close();
+        };
     }
 
-    loadInProgressQueue(); // Initial load of the in-progress queue
-    setInterval(loadInProgressQueue, 5000); // Reload queue every 5 seconds
-</script>
+    // Функція для оновлення таблиці черги
+    function updateQueueTable(queue) {
+        const queueDiv = document.getElementById('in-progress-queue');
+        queueDiv.innerHTML = '';
 
+        if (queue.length === 0) {
+            queueDiv.innerHTML = '<p>Черга пуста.</p>';
+        } else {
+            const table = document.createElement('table');
+            const header = `<tr><th>Талон</th><th>Робоче місце</th></tr>`;
+            table.innerHTML = header;
+
+            queue.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${entry.ticketNumber}</td>
+                    <td>${entry.workplace?.workplaceName || entry.workplace.id}</td>
+                `;
+                table.appendChild(row);
+            });
+
+            queueDiv.appendChild(table);
+
+            // Оновлюємо звукове сповіщення для поточного талону
+            const currentClient = queue[0]; // Поточний клієнт (перший у черзі)
+
+            // Перевіряємо, чи з'явився новий клієнт
+            if (currentClient.ticketNumber !== lastTicketNumber) {
+                playSoundAlert(currentClient);
+                lastTicketNumber = currentClient.ticketNumber; // Оновлюємо останній оброблений талон
+            }
+        }
+    }
+
+    // Функція для програвання звукового сповіщення та відображення повідомлення на 5 секунд
+    function playSoundAlert(client) {
+        const soundAlertElement = document.getElementById('sound-alert');
+        soundAlertElement.innerHTML = `Шановний клієнте з талоном №${client.ticketNumber}, пройдіть будь ласка до робочого місця №${client.workplace?.workplaceName || client.workplace.id}`;
+        soundAlertElement.style.display = 'block'; // Показуємо повідомлення
+
+        // Програвання звуку
+        const audio = new Audio('/sounds/message.wav');
+        audio.play();
+
+        // Приховуємо повідомлення через 5 секунд
+        setTimeout(() => {
+            soundAlertElement.style.display = 'none';
+        }, 5000);
+    }
+
+    // Ініціалізація сторінки
+    connectToQueueUpdates();
+</script>
 </body>
 </html>

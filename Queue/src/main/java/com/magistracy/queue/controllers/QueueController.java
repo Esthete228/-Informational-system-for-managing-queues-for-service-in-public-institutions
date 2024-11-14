@@ -2,9 +2,12 @@ package com.magistracy.queue.controllers;
 
 import com.magistracy.queue.entities.Queue;
 import com.magistracy.queue.services.QueueService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +44,6 @@ public class QueueController {
         return ResponseEntity.ok("Талон успішно видалено");
     }
 
-
     @GetMapping("/current-queue/{workplaceId}")
     public ResponseEntity<List<Queue>> getCurrentQueue(@PathVariable Long workplaceId) {
         List<Queue> queue = queueService.getCurrentQueue(workplaceId);
@@ -58,6 +60,24 @@ public class QueueController {
     public ResponseEntity<List<Queue>> getInProgressQueue() {
         List<Queue> inProgressQueue = queueService.getInProgressTickets();
         return ResponseEntity.ok(inProgressQueue);
+    }
+
+    @GetMapping(value = "/queue-updates", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamQueueUpdates() {
+        SseEmitter emitter = new SseEmitter();
+        new Thread(() -> {
+            try {
+                while (true) {
+                    // Перевірка на зміни в черзі (змінюйте відповідно до вашої логіки)
+                    List<Queue> updatedQueue = queueService.getInProgressTickets();
+                    emitter.send(updatedQueue); // Надсилаємо дані черги
+                    Thread.sleep(5000); // Перевіряємо зміни кожні 5 секунд (можна налаштувати)
+                }
+            } catch (IOException | InterruptedException e) {
+                emitter.completeWithError(e);
+            }
+        }).start();
+        return emitter;
     }
 
     @PostMapping("/call-next-client/{workplaceId}")

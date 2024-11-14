@@ -68,10 +68,10 @@
 <h1>Адміністративна панель</h1>
 <div class="top-bar">
     <div id="admin-buttons" class="top-bar-left">
-        <button class="button theme" onclick="openSubMenu('services-menu')">Керування послугами</button>
-        <button class="button theme" onclick="openSubMenu('workplaces-menu')">Керування робочими місцями</button>
-        <button class="button theme" onclick="openSubMenu('employees-menu')">Керування працівниками</button>
-        <button class="button theme" onclick="openSubMenu('reports-menu')">Звіти</button>
+        <button class="button" onclick="openSubMenu('services-menu')">Керування послугами</button>
+        <button class="button" onclick="openSubMenu('workplaces-menu')">Керування робочими місцями</button>
+        <button class="button" onclick="openSubMenu('employees-menu')">Керування працівниками</button>
+        <button class="button" onclick="openSubMenu('reports-menu')">Звіти</button>
     </div>
     <div class="top-bar-right">
         <button onclick="window.location.href='/logout'">Вийти з облікового запису</button>
@@ -112,7 +112,7 @@
         <form id="addServiceForm">
             <input type="text" id="serviceName" placeholder="Назва послуги" required>
             <input type="text" id="serviceDescription" placeholder="Опис послуги" required>
-            <button type="submit" class="button theme">Додати послугу</button>
+            <button type="submit" class="button">Додати послугу</button>
         </form>
     </div>
 </div>
@@ -128,7 +128,7 @@
             </select>
             <input type="text" id="updatedServiceName" placeholder="Нова назва послуги" required>
             <input type="text" id="updatedServiceDescription" placeholder="Новий опис послуги" required>
-            <button type="submit" class="button theme">Оновити послугу</button>
+            <button type="submit" class="button">Оновити послугу</button>
         </form>
     </div>
 </div>
@@ -142,7 +142,7 @@
                 <option value="">Виберіть послугу</option>
                 <!-- Динамічно завантажимо список послуг -->
             </select>
-            <button type="submit" class="button theme">Видалити послугу</button>
+            <button type="submit" class="button">Видалити послугу</button>
         </form>
     </div>
 </div>
@@ -154,7 +154,7 @@
         <h2>Додати робоче місце</h2>
         <form id="addWorkplaceForm">
             <input type="text" id="workplaceName" placeholder="Назва робочого місця" required>
-            <button type="submit" class="button theme">Додати робоче місце</button>
+            <button type="submit" class="button">Додати робоче місце</button>
         </form>
     </div>
 </div>
@@ -169,7 +169,7 @@
                 <!-- Динамічно завантажимо список робочих місць -->
             </select>
             <input type="text" id="updatedWorkplaceName" placeholder="Нова назва робочого місця" required>
-            <button type="submit" class="button theme">Оновити робоче місце</button>
+            <button type="submit" class="button">Оновити робоче місце</button>
         </form>
     </div>
 </div>
@@ -183,7 +183,7 @@
                 <option value="">Виберіть робоче місце</option>
                 <!-- Динамічно завантажимо список робочих місць -->
             </select>
-            <button type="submit" class="button theme">Видалити робоче місце</button>
+            <button type="submit" class="button">Видалити робоче місце</button>
         </form>
     </div>
 </div>
@@ -205,7 +205,7 @@
                 <option value="">Виберіть робоче місце</option>
                 <!-- Динамічно завантажимо список робочих місць -->
             </select>
-            <button type="submit" class="button theme">Додати працівника</button>
+            <button type="submit" class="button">Додати працівника</button>
         </form>
     </div>
 </div>
@@ -230,7 +230,7 @@
                 <option value="">Оновити робоче місце</option>
                 <!-- Динамічно завантажимо список робочих місць -->
             </select>
-            <button type="submit" class="button theme">Оновити працівника</button>
+            <button type="submit" class="button">Оновити працівника</button>
         </form>
     </div>
 </div>
@@ -244,7 +244,7 @@
                 <option value="">Виберіть працівника</option>
                 <!-- Динамічно завантажимо список працівників -->
             </select>
-            <button type="submit" class="button theme">Видалити працівника</button>
+            <button type="submit" class="button">Видалити працівника</button>
         </form>
     </div>
 </div>
@@ -259,7 +259,7 @@
             <input type="datetime-local" id="startDate" name="startDate" required><br><br>
             <label for="endDate">Кінець періоду:</label>
             <input type="datetime-local" id="endDate" name="endDate" required><br><br>
-            <button type="submit" class="button theme">Згенерувати звіт</button>
+            <button type="submit" class="button">Згенерувати звіт</button>
         </form>
 
         <hr>

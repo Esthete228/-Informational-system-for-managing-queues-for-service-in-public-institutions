@@ -47,7 +47,6 @@ function fetchData(url, successCallback) {
 }
 
 // Завантаження робочих місць
-// Завантаження робочих місць
 fetchData('/workplaces/all-workplaces', workplaces => {
     console.log('Робочі місця:', workplaces); // Перевірте тут, чи отримуєте ви правильний список
     if (Array.isArray(workplaces)) {
@@ -62,24 +61,24 @@ fetchData('/workplaces/all-workplaces', workplaces => {
         workplaces.forEach(workplace => {
             const optionUpdate = document.createElement('option');
             optionUpdate.value = workplace.id;
-            optionUpdate.textContent = `ID: ${workplace.id}, Назва: ${workplace.workplaceName}`;
+            optionUpdate.textContent = `${workplace.workplaceName}`;
             updateSelect.appendChild(optionUpdate);
 
             const optionDelete = document.createElement('option');
             optionDelete.value = workplace.id;
-            optionDelete.textContent = `ID: ${workplace.id}, Назва: ${workplace.workplaceName}`;
+            optionDelete.textContent = `${workplace.workplaceName}`;
             deleteSelect.appendChild(optionDelete);
 
             // Додаємо робоче місце в список для додавання працівника
             const optionAdd = document.createElement('option');
             optionAdd.value = workplace.id;
-            optionAdd.textContent = `ID: ${workplace.id}, Назва: ${workplace.workplaceName}`;
+            optionAdd.textContent = `${workplace.workplaceName}`;
             addWorkplaceSelect.appendChild(optionAdd);
 
             // Додаємо робоче місце в список для оновлення працівника
             const optionUpdateWorkplace = document.createElement('option');
             optionUpdateWorkplace.value = workplace.id;
-            optionUpdateWorkplace.textContent = `ID: ${workplace.id}, Назва: ${workplace.workplaceName}`;
+            optionUpdateWorkplace.textContent = `${workplace.workplaceName}`;
             updateWorkplaceSelect.appendChild(optionUpdateWorkplace);
         });
     } else {
