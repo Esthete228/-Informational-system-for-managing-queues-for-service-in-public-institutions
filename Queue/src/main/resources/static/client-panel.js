@@ -1,3 +1,100 @@
+// Загальна функція для оновлення доступних годин для обох сценаріїв
+// Загальна функція для оновлення доступних годин для обох сценаріїв
+function updateAvailableTimes(dateInputId, timeSelectId, serviceId = null, appointmentId = null) {
+    const appointmentDate = document.getElementById(dateInputId).value;
+    const timeSelect = document.getElementById(timeSelectId);
+    timeSelect.innerHTML = '<option value="">Виберіть час</option>'; // Очистити попередні значення
+
+    if (appointmentDate) {
+        const selectedDate = new Date(appointmentDate);
+        const dayOfWeek = selectedDate.getDay();
+        const today = new Date();
+        const currentTime = today.getHours() * 60 + today.getMinutes(); // Поточний час у хвилинах (для порівняння)
+
+        // Забороняємо вибір попередніх днів
+        if (selectedDate < today) {
+            alert('Вибір дати обмежений поточним днем або в майбутньому.');
+            return;
+        }
+
+        // Завантаження записів клієнта для перевірки на доступність
+        fetch('/appointments/client-appointments')
+            .then(response => response.json())
+            .then(appointments => {
+                const takenTimes = appointments
+                    .filter(appointment => {
+                        const appointmentDate = new Date(appointment.appointmentTime);
+                        return appointmentDate.toLocaleDateString() === selectedDate.toLocaleDateString() &&
+                            (appointmentId === null || appointment.id !== appointmentId) && // Перевірка, чи не це поточний запис
+                            (serviceId === null || appointment.serviceEntity.id !== serviceId); // Перевірка на іншу послугу
+                    })
+                    .map(appointment => new Date(appointment.appointmentTime).toLocaleTimeString('en-GB').slice(0, 5)); // Заброньовані години на цей день
+
+                const availableHours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+
+                availableHours.forEach(hour => {
+                    const option = document.createElement('option');
+                    option.value = hour;
+                    option.textContent = hour;
+
+                    const [hourValue, minuteValue] = hour.split(":").map(Number);
+                    const selectedTimeInMinutes = hourValue * 60 + minuteValue;
+
+                    // Якщо день вибраний як поточний, перевіряємо, чи не пройшов час
+                    if (selectedDate.toLocaleDateString() === today.toLocaleDateString() && selectedTimeInMinutes < currentTime) {
+                        option.disabled = true; // Відключити години, що вже пройшли на поточний день
+                    }
+
+                    // Якщо година вже заброньована, не даємо її вибрати
+                    if (takenTimes.includes(hour)) {
+                        option.disabled = true;
+                    }
+
+                    timeSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error loading appointments:', error));
+    }
+}
+
+// Використовуємо для первинного запису
+document.getElementById('appointmentDate').addEventListener('change', () => {
+    updateAvailableTimes('appointmentDate', 'appointmentTime');
+});
+
+// Використовуємо для перезапису
+document.getElementById('rescheduleAppointmentDate').addEventListener('change', () => {
+    updateAvailableTimes('rescheduleAppointmentDate', 'newAppointmentTime');
+});
+
+// Логіка для відкриття модального вікна
+// Відкрити модальне вікно
+function openModal(modalId, appointmentId = null) {
+    if (appointmentId !== null) {
+        document.getElementById('rescheduleAppointmentId').value = appointmentId;
+    }
+    document.getElementById(modalId).style.display = 'flex';
+}
+
+// Закрити модальне вікно
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// Завантаження всіх послуг для запису клієнта
+fetch('/services/all-services')
+    .then(response => response.json())
+    .then(services => {
+        const serviceSelect = document.getElementById('serviceId');
+        services.forEach(service => {
+            const option = document.createElement('option');
+            option.value = service.id;
+            option.textContent = service.serviceName;
+            serviceSelect.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error:', error));
+
 // Завантаження записів клієнта
 fetch('/appointments/client-appointments')
     .then(response => response.json())
@@ -24,38 +121,12 @@ fetch('/appointments/client-appointments')
         console.error('Помилка при завантаженні записів:', error);
     });
 
-// Відкрити модальне вікно
-function openModal(modalId, appointmentId = null) {
-    if (appointmentId !== null) {
-        document.getElementById('rescheduleAppointmentId').value = appointmentId;
-    }
-    document.getElementById(modalId).style.display = 'flex';
-}
-
-// Закрити модальне вікно
-function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
-}
-
-// Завантаження всіх послуг для запису клієнта
-fetch('/services/all-services')
-    .then(response => response.json())
-    .then(services => {
-        const serviceSelect = document.getElementById('serviceId'); // Вибираємо правильний select
-        services.forEach(service => {
-            const option = document.createElement('option');
-            option.value = service.id;
-            option.textContent = service.serviceName; // Відображаємо назву послуги
-            serviceSelect.appendChild(option); // Додаємо опцію у select
-        });
-    })
-    .catch(error => console.error('Error:', error));
-
 // Логіка для бронювання послуги
 document.getElementById('bookAppointmentForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
     const serviceId = document.getElementById('serviceId').value;
+    const appointmentDate = document.getElementById('appointmentDate').value;
     const appointmentTime = document.getElementById('appointmentTime').value;
     const clientId = document.getElementById('clientId').value;
 
@@ -64,15 +135,20 @@ document.getElementById('bookAppointmentForm').addEventListener('submit', functi
         return;
     }
 
-    fetch('/appointments/book', { // Правильний шлях
+    if (!appointmentDate || !appointmentTime) {
+        alert('Будь ласка, виберіть дату і час для запису.');
+        return;
+    }
+
+    const appointmentDateTime = `${appointmentDate}T${appointmentTime}:00`; // Формуємо повний час запису
+
+    fetch('/appointments/book', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             serviceId: serviceId,
             clientId: clientId,
-            appointmentTime: appointmentTime
+            appointmentTime: appointmentDateTime
         })
     })
         .then(response => {
@@ -91,21 +167,26 @@ document.getElementById('rescheduleForm').addEventListener('submit', function (e
     event.preventDefault();
     const appointmentId = document.getElementById('rescheduleAppointmentId').value;
     const newTime = document.getElementById('newAppointmentTime').value;
+    const newDate = document.getElementById('rescheduleAppointmentDate').value;
 
-    if (newTime) {
+    if (newTime && newDate) {
+        const newAppointmentDateTime = `${newDate}T${newTime}:00`;
+
         fetch(`/appointments/update/${appointmentId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ newAppointmentTime: newTime })
+            body: JSON.stringify({ newAppointmentTime: newAppointmentDateTime })
         })
             .then(response => {
                 if (response.ok) {
-                    closeModal('rescheduleModal');
+                    alert('Перезапис успішно виконано!');
                     location.reload();
                 } else {
                     alert("Не вдалося перезаписати запис. Спробуйте ще раз.");
                 }
             });
+    } else {
+        alert('Будь ласка, виберіть нову дату та час для перезапису.');
     }
 });
 

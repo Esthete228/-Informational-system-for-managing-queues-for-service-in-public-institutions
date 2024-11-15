@@ -61,10 +61,10 @@
 <h1>Особистий кабінет</h1>
 <div class="top-bar">
   <div class="top-bar-left">
-    <button onclick="openModal('create-appointment-modal')">Створити попередній запис в чергу</button>
+    <button onclick="openModal('create-appointment-modal')">Створити попередній запис</button>
   </div>
   <div class="top-bar-right">
-    <button onclick="window.location.href='/logout'">Вийти з облікового запису</button>
+    <button onclick="window.location.href='/logout'">Вийти</button>
   </div>
 </div>
 
@@ -76,29 +76,43 @@
   <div class="modal-content">
     <span class="close" onclick="closeModal('create-appointment-modal')">&times;</span>
     <h1>Запис на послугу</h1>
-      <form id="bookAppointmentForm">
-        <label for="serviceId">Виберіть послугу:</label>
-        <select id="serviceId" required>
-          <option value="">Виберіть послугу</option>
-        </select>
-        <label for="appointmentTime">Час запису:</label>
-        <input type="datetime-local" id="appointmentTime" required>
-        <input type="hidden" id="clientId" value="${clientId}">
-        <button type="submit" class="button">Записатися</button>
-        <button type="button" class="button" onclick="closeModal('create-appointment-modal')">Скасувати</button>
+    <form id="bookAppointmentForm">
+      <label for="serviceId">Виберіть послугу:</label>
+      <select id="serviceId" required>
+        <option value="">Виберіть послугу</option>
+      </select>
+
+      <label for="appointmentDate">Виберіть дату:</label>
+      <input type="date" id="appointmentDate" required>
+
+      <label for="appointmentTime">Виберіть час:</label>
+      <select id="appointmentTime" required>
+        <option value="">Виберіть час</option>
+      </select>
+
+      <input type="hidden" id="clientId" value="${clientId}">
+
+      <button type="submit" class="button">Записатися</button>
+      <button type="button" class="button" onclick="closeModal('create-appointment-modal')">Скасувати</button>
     </form>
   </div>
 </div>
 
-<!-- Модальне вікно для зміни часу запису -->
+<!-- Модальне вікно для перезапису -->
 <div class="modal" id="rescheduleModal">
   <div class="modal-content">
     <span class="close" onclick="closeModal('rescheduleModal')">&times;</span>
     <h2>Перезапис</h2>
     <form id="rescheduleForm">
       <input type="hidden" id="rescheduleAppointmentId">
+      <label for="rescheduleAppointmentDate">Нова дата:</label>
+      <input type="date" id="rescheduleAppointmentDate" required>
+
       <label for="newAppointmentTime">Новий час:</label>
-      <input type="datetime-local" id="newAppointmentTime" required>
+      <select id="newAppointmentTime" required>
+        <option value="">Виберіть час</option>
+      </select>
+
       <button type="submit" class="button">Підтвердити</button>
       <button type="button" class="button" onclick="closeModal('rescheduleModal')">Скасувати</button>
     </form>

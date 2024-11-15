@@ -6,6 +6,7 @@ import com.magistracy.queue.entities.ServiceEntity;
 import com.magistracy.queue.repositories.AppointmentRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -66,11 +67,30 @@ public class AppointmentService {
     }
 
     // Метод для бронювання запису
-    public Appointment bookAppointment(ServiceEntity serviceEntity, Client client, LocalDateTime appointmentTime) {
+    public Appointment bookAppointment(ServiceEntity service, Client client, LocalDateTime appointmentTime) {
+        // Перевірка, чи вибраний день є буднім
+        if (appointmentTime.getDayOfWeek() == DayOfWeek.SATURDAY || appointmentTime.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            throw new RuntimeException("Запис доступний тільки на будні дні");
+        }
+
+        // Перевірка, чи час у майбутньому
+        if (appointmentTime.isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Неможливо записатися на попередні дні");
+        }
+
+        // Перевірка, чи час не заброньований для цієї послуги
+        List<Appointment> existingAppointments = appointmentRepository.findByAppointmentTimeAndServiceEntity(appointmentTime, service);
+        if (!existingAppointments.isEmpty()) {
+            throw new RuntimeException("Цей час вже заброньований для цієї послуги");
+        }
+
+        // Створення нового запису
         Appointment appointment = new Appointment();
-        appointment.setServiceEntity(serviceEntity);
+        appointment.setServiceEntity(service);
         appointment.setClient(client);
         appointment.setAppointmentTime(appointmentTime);
+
+        // Збереження нового запису
         return appointmentRepository.save(appointment);
     }
 }

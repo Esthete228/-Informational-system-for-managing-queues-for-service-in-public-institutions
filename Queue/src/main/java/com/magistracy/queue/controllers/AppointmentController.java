@@ -3,6 +3,7 @@ package com.magistracy.queue.controllers;
 import com.magistracy.queue.entities.Appointment;
 import com.magistracy.queue.entities.Client;
 import com.magistracy.queue.entities.ServiceEntity;
+import com.magistracy.queue.repositories.AppointmentRepository;
 import com.magistracy.queue.repositories.ClientRepository;
 import com.magistracy.queue.repositories.ServiceEntityRepository;
 import com.magistracy.queue.services.AppointmentService;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -20,11 +22,13 @@ import java.util.Map;
 @RequestMapping("/appointments")
 public class AppointmentController {
 
+    private final AppointmentRepository appointmentRepository;
     private final AppointmentService appointmentService;
     private final ServiceEntityRepository serviceEntityRepository;
     private final ClientRepository clientRepository;
 
-    public AppointmentController(AppointmentService appointmentService, ServiceEntityRepository serviceEntityRepository, ClientRepository clientRepository) {
+    public AppointmentController(AppointmentRepository appointmentRepository, AppointmentService appointmentService, ServiceEntityRepository serviceEntityRepository, ClientRepository clientRepository) {
+        this.appointmentRepository = appointmentRepository;
         this.appointmentService = appointmentService;
         this.serviceEntityRepository = serviceEntityRepository;
         this.clientRepository = clientRepository;
@@ -60,7 +64,9 @@ public class AppointmentController {
             Client client = clientRepository.findById(clientId)
                     .orElseThrow(() -> new RuntimeException("Клієнт не знайдений"));
 
+            // Переносимо всю логіку перевірок в сервіс
             Appointment appointment = appointmentService.bookAppointment(service, client, appointmentTime);
+
             return ResponseEntity.ok(appointment);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Помилка при бронюванні: " + e.getMessage());
