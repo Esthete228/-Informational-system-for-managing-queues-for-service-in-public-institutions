@@ -2,7 +2,6 @@ package com.magistracy.queue.services;
 
 import com.magistracy.queue.entities.OtpCodeEntity;
 import com.magistracy.queue.repositories.OtpCodeRepository;
-import com.magistracy.queue.security.AESUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

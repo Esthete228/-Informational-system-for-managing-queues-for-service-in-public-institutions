@@ -1,4 +1,4 @@
-package com.magistracy.queue.security;
+package com.magistracy.queue.services;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
