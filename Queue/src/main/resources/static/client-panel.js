@@ -1,5 +1,4 @@
 // Загальна функція для оновлення доступних годин для обох сценаріїв
-// Загальна функція для оновлення доступних годин для обох сценаріїв
 function updateAvailableTimes(dateInputId, timeSelectId, serviceId = null, appointmentId = null) {
     const appointmentDate = document.getElementById(dateInputId).value;
     const timeSelect = document.getElementById(timeSelectId);
