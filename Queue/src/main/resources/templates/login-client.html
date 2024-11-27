@@ -7,10 +7,20 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<h1>Вхід для клієнта</h1>
-<form action="/send-otp" method="POST">
+<h1>Логін клієнта</h1>
+<form id="client-login-form" action="/send-otp" method="POST" onsubmit="return validatePhone()">
   <label for="phone">Номер телефону:</label>
-  <input type="text" id="phone" name="phone" required pattern="\+?[0-9\s]{10,15}" title="Введіть коректний номер телефону"><br>
+  <input
+          type="text"
+          id="phone"
+          name="phone"
+          required
+          pattern="\+[0-9]{10,13}"
+          maxlength="13"
+          title="Номер повинен починатися з '+' і містити код країни та до 13 цифр"
+  >
+  <br>
+  <span id="phone-error" style="color: red; display: none;">Номер телефону має бути у форматі +380963500185.</span>
   <button type="submit" class="button">Отримати код для входу</button>
   <p>Ще не зареєстровані?</p>
   <button onclick="window.location.href='/register-client'" class="button" type="button">Реєстрація</button>

@@ -46,8 +46,24 @@ document.addEventListener("DOMContentLoaded", function() {
     // Function to fetch JSON data from URL
     async function fetchJSON(url) {
         const response = await fetch(url);
-        if (!response.ok) throw new Error("Network response was not ok");
-        return await response.json();
+
+        // Перевіряємо, чи відповідь успішна
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.statusText}`);
+        }
+
+        // Перевіряємо, чи тіло відповіді не порожнє
+        const text = await response.text();
+        if (!text) {
+            console.warn('Empty response received.');
+            return null; // Повертаємо null для порожньої відповіді
+        }
+
+        try {
+            return JSON.parse(text); // Розбираємо JSON
+        } catch (error) {
+            throw new Error("Failed to parse JSON response: " + error.message);
+        }
     }
 
     // Populate dropdowns for services and workplaces
@@ -124,22 +140,26 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    // Populate current client data
+// Populate current client data
     async function populateCurrentClient() {
         try {
             const workplaceId = await fetchWorkplaceId();
             const currentClientData = await fetchJSON(`/queues/current-client/${workplaceId}`);
-            console.log("Current client data:", currentClientData);
 
-            if (currentClientData) {
+            if (currentClientData && currentClientData.ticketNumber) {
                 currentClientDiv.innerText = `Клієнт: ${currentClientData.ticketNumber}, Послуга: ${currentClientData.serviceEntity.serviceName}`;
                 currentClientDiv.dataset.currentTicketId = currentClientData.id;
             } else {
-                currentClientDiv.innerText = "Клієнт не обслуговується.";
+                // Якщо клієнта немає або відповіді порожні
+                console.warn("Немає клієнта для обслуговування або порожня відповідь.");
+                currentClientDiv.innerText = "Клієнта не викликано.";
                 delete currentClientDiv.dataset.currentTicketId;
             }
         } catch (error) {
             console.error("Error loading current client:", error);
+            // Встановлення значення на випадок помилки
+            currentClientDiv.innerText = "Не вдалося завантажити дані про клієнта.";
+            delete currentClientDiv.dataset.currentTicketId;
         }
     }
 

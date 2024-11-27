@@ -50,7 +50,6 @@ public class QueueService {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
 
-        // Отримуємо всі записи на вказану дату
         List<Appointment> appointments = appointmentRepository.findAll().stream()
                 .filter(a -> a.getAppointmentTime().isAfter(startOfDay) && a.getAppointmentTime().isBefore(endOfDay))
                 .toList();
@@ -60,21 +59,23 @@ public class QueueService {
             return;
         }
 
+        int ticketLimit = 5;
+
         for (Appointment appointment : appointments) {
             Queue queue = new Queue();
             queue.setServiceEntity(appointment.getServiceEntity());
 
-            // Вибір першого доступного робочого місця
-            Workplace workplace = workplaceRepository.findAll().stream().findFirst()
-                    .orElseThrow(() -> new RuntimeException("Робочі місця відсутні"));
+            // Перевірка завантаженості та вибір робочого місця
+            Workplace workplace = findLeastLoadedWorkplace();
+            if (isWorkplaceOverloaded(workplace.getId(), ticketLimit)) {
+                workplace = findLeastLoadedWorkplace();
+            }
+
             queue.setWorkplace(workplace);
             queue.setTicketNumber(generateTicketNumber());
             queue.setStatus(Queue.QueueStatus.ACTIVE);
 
-            // Зберігаємо талон у таблиці queue
             queueRepository.save(queue);
-
-            // Видаляємо запис з appointments
             appointmentRepository.delete(appointment);
         }
     }
@@ -96,11 +97,33 @@ public class QueueService {
                 .orElse(null);
     }
 
+    private Workplace findLeastLoadedWorkplace() {
+        List<Workplace> workplaces = workplaceRepository.findAll();
+
+        return workplaces.stream()
+                .min((wp1, wp2) -> {
+                    int wp1Load = queueRepository.findByWorkplaceIdAndStatus(wp1.getId(), Queue.QueueStatus.ACTIVE).size();
+                    int wp2Load = queueRepository.findByWorkplaceIdAndStatus(wp2.getId(), Queue.QueueStatus.ACTIVE).size();
+                    return Integer.compare(wp1Load, wp2Load);
+                })
+                .orElseThrow(() -> new RuntimeException("Робочі місця недоступні"));
+    }
+
+    private boolean isWorkplaceOverloaded(Long workplaceId, int limit) {
+        int ticketCount = queueRepository.findByWorkplaceIdAndStatus(workplaceId, Queue.QueueStatus.ACTIVE).size();
+        return ticketCount >= limit;
+    }
+
     public Queue createTicket(Long serviceId, Long workplaceId) {
         ServiceEntity serviceEntity = serviceEntityRepository.findById(serviceId)
                 .orElseThrow(() -> new RuntimeException("Послуга не знайдена"));
         Workplace workplace = workplaceRepository.findById(workplaceId)
                 .orElseThrow(() -> new RuntimeException("Робоче місце не знайдено"));
+
+        int ticketLimit = 5; // Максимальна кількість талонів на робочому місці
+        if (isWorkplaceOverloaded(workplaceId, ticketLimit)) {
+            workplace = findLeastLoadedWorkplace();
+        }
 
         Queue queue = new Queue();
         queue.setServiceEntity(serviceEntity);

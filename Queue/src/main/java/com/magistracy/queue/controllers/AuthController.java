@@ -120,9 +120,20 @@ public class AuthController {
 
     @PostMapping("/send-otp")
     public ModelAndView sendOtp(@RequestParam String phone) {
-        String otpCode = otpService.generateOTP();
-        otpService.saveOtp(phone, otpCode);
-        return new ModelAndView("otp-verification", "phone", phone);
+        // Перевірка, чи існує клієнт із заданим номером телефону
+        Optional<Client> clientOptional = clientRepository.findByPhoneNumber(phone);
+
+        if (clientOptional.isPresent()) {
+            // Генерація OTP-коду
+            String otpCode = otpService.generateOTP();
+            otpService.saveOtp(phone, otpCode);
+
+            // Перенаправляємо на сторінку верифікації
+            return new ModelAndView("otp-verification", "phone", phone);
+        }
+
+        // Якщо клієнта не знайдено, повертаємо помилку
+        return new ModelAndView("login-client", "error", "Клієнт з цим номером телефону не знайдений.");
     }
 
     @PostMapping("/verify-otp")
