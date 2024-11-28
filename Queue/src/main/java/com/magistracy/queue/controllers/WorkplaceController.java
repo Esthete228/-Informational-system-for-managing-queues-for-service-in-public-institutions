@@ -1,6 +1,7 @@
 package com.magistracy.queue.controllers;
 
 import com.magistracy.queue.entities.Workplace;
+import com.magistracy.queue.services.ServiceWorkplaceService;
 import com.magistracy.queue.services.WorkplaceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,9 +14,11 @@ import java.util.List;
 public class WorkplaceController {
 
     private final WorkplaceService workplaceService;
+    private final ServiceWorkplaceService serviceWorkplaceService;
 
-    public WorkplaceController(WorkplaceService workplaceService) {
+    public WorkplaceController(WorkplaceService workplaceService, ServiceWorkplaceService serviceWorkplaceService) {
         this.workplaceService = workplaceService;
+        this.serviceWorkplaceService = serviceWorkplaceService;
     }
 
     @GetMapping("/all-workplaces")

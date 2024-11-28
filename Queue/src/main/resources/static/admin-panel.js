@@ -1,3 +1,4 @@
+
 // Відкриття підменю
 function openSubMenu(menuId) {
     document.querySelectorAll('.submenu').forEach(menu => menu.style.display = 'none');
@@ -46,47 +47,59 @@ function fetchData(url, successCallback) {
         });
 }
 
-// Завантаження робочих місць
-fetchData('/workplaces/all-workplaces', workplaces => {
-    console.log('Робочі місця:', workplaces); // Перевірте тут, чи отримуєте ви правильний список
-    if (Array.isArray(workplaces)) {
-        const updateSelect = document.getElementById('workplaceIdToUpdate');
-        const deleteSelect = document.getElementById('workplaceIdToDelete');
-        const addWorkplaceSelect = document.getElementById('assignedWorkplace');
-        const updateWorkplaceSelect = document.getElementById('updatedAssignedWorkplace');
+// Завантаження всіх даних при завантаженні сторінки
+document.addEventListener('DOMContentLoaded', function() {
+    // Завантаження робочих місць
+    fetchData('/workplaces/all-workplaces', workplaces => {
+        console.log('Робочі місця:', workplaces);
+        if (Array.isArray(workplaces)) {
+            const updateSelect = document.getElementById('workplaceIdToUpdate');
+            const deleteSelect = document.getElementById('workplaceIdToDelete');
+            const addWorkplaceSelect = document.getElementById('assignedWorkplace');
+            const updateWorkplaceSelect = document.getElementById('updatedAssignedWorkplace');
+            const workplaceLinkSelect = document.getElementById('workplaceIdToLink');
+            const workplaceUnlinkSelect = document.getElementById('workplaceIdToUnlink');
 
-        // Очищаємо попередній вміст
-        updateSelect.innerHTML = deleteSelect.innerHTML = addWorkplaceSelect.innerHTML = updateWorkplaceSelect.innerHTML = '<option value="">Виберіть робоче місце</option>';
+            // Очищаємо попередній вміст
+            updateSelect.innerHTML = deleteSelect.innerHTML = addWorkplaceSelect.innerHTML = updateWorkplaceSelect.innerHTML = '<option value="">Виберіть робоче місце</option>';
 
-        workplaces.forEach(workplace => {
-            const optionUpdate = document.createElement('option');
-            optionUpdate.value = workplace.id;
-            optionUpdate.textContent = `${workplace.workplaceName}`;
-            updateSelect.appendChild(optionUpdate);
+            workplaces.forEach(workplace => {
+                const optionUpdate = document.createElement('option');
+                optionUpdate.value = workplace.id;
+                optionUpdate.textContent = `${workplace.workplaceName}`;
+                updateSelect.appendChild(optionUpdate);
 
-            const optionDelete = document.createElement('option');
-            optionDelete.value = workplace.id;
-            optionDelete.textContent = `${workplace.workplaceName}`;
-            deleteSelect.appendChild(optionDelete);
+                const optionDelete = document.createElement('option');
+                optionDelete.value = workplace.id;
+                optionDelete.textContent = `${workplace.workplaceName}`;
+                deleteSelect.appendChild(optionDelete);
 
-            // Додаємо робоче місце в список для додавання працівника
-            const optionAdd = document.createElement('option');
-            optionAdd.value = workplace.id;
-            optionAdd.textContent = `${workplace.workplaceName}`;
-            addWorkplaceSelect.appendChild(optionAdd);
+                const optionAdd = document.createElement('option');
+                optionAdd.value = workplace.id;
+                optionAdd.textContent = `${workplace.workplaceName}`;
+                addWorkplaceSelect.appendChild(optionAdd);
 
-            // Додаємо робоче місце в список для оновлення працівника
-            const optionUpdateWorkplace = document.createElement('option');
-            optionUpdateWorkplace.value = workplace.id;
-            optionUpdateWorkplace.textContent = `${workplace.workplaceName}`;
-            updateWorkplaceSelect.appendChild(optionUpdateWorkplace);
-        });
-    } else {
-        console.error('Невірний формат даних робочих місць');
-    }
-});
+                const optionUpdateWorkplace = document.createElement('option');
+                optionUpdateWorkplace.value = workplace.id;
+                optionUpdateWorkplace.textContent = `${workplace.workplaceName}`;
+                updateWorkplaceSelect.appendChild(optionUpdateWorkplace);
 
-// Завантаження працівників
+                const optionLink = document.createElement('option');
+                optionLink.value = workplace.id;
+                optionLink.textContent = `${workplace.workplaceName}`;
+                workplaceLinkSelect.appendChild(optionLink);
+
+                const optionUnlink = document.createElement('option');
+                optionUnlink.value = workplace.id;
+                optionUnlink.textContent = `${workplace.workplaceName}`;
+                workplaceUnlinkSelect.appendChild(optionUnlink);
+            });
+        } else {
+            console.error('Невірний формат даних робочих місць');
+        }
+    });
+
+    // Завантаження працівників
     fetchData('/employees/all-employees', employees => {
         console.log('Працівники:', employees);
         const updateSelect = document.getElementById('employeeIdToUpdate');
@@ -100,19 +113,32 @@ fetchData('/workplaces/all-workplaces', workplaces => {
         });
     });
 
-// Завантаження послуг
-fetchData('/services/all-services', services => {
-    console.log('Послуги:', services); // Логуємо отримані дані
-    const updateSelect = document.getElementById('serviceIdToUpdate');
-    const deleteSelect = document.getElementById('serviceIdToDelete');
-    updateSelect.innerHTML = deleteSelect.innerHTML = '<option value="">Виберіть послугу</option>';
+    // Завантаження послуг
+    fetchData('/services/all-services', services => {
+        console.log('Послуги:', services);
+        const updateSelect = document.getElementById('serviceIdToUpdate');
+        const deleteSelect = document.getElementById('serviceIdToDelete');
+        const serviceLinkSelect = document.getElementById('serviceIdToLink');
+        const serviceUnlinkSelect = document.getElementById('serviceIdToUnlink');
+        updateSelect.innerHTML = deleteSelect.innerHTML = '<option value="">Виберіть послугу</option>';
 
-    services.forEach(service => {
-        const option = document.createElement('option');
-        option.value = service.id;
-        option.textContent = service.serviceName;
-        updateSelect.appendChild(option.cloneNode(true));
-        deleteSelect.appendChild(option);
+        services.forEach(service => {
+            const option = document.createElement('option');
+            option.value = service.id;
+            option.textContent = service.serviceName;
+            updateSelect.appendChild(option.cloneNode(true));
+            deleteSelect.appendChild(option);
+
+            const optionLink = document.createElement('option');
+            optionLink.value = service.id;
+            optionLink.textContent = service.serviceName;
+            serviceLinkSelect.appendChild(optionLink);
+
+            const optionUnlink = document.createElement('option');
+            optionUnlink.value = service.id;
+            optionUnlink.textContent = service.serviceName;
+            serviceUnlinkSelect.appendChild(optionUnlink);
+        });
     });
 });
 
@@ -374,4 +400,80 @@ document.getElementById('deleteWorkplaceForm').addEventListener('submit', functi
             loadWorkplaces();
         }
     }).catch(error => console.error('Error:', error));
+});
+
+// Прив'язка послуги до робочого місця
+document.getElementById('linkServiceForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const serviceId = document.getElementById('serviceIdToLink').value;
+    const workplaceId = document.getElementById('workplaceIdToLink').value;
+
+    if (!serviceId || !workplaceId) {
+        alert('Будь ласка, виберіть послугу та робоче місце.');
+        return;
+    }
+
+    const requestData = {
+        serviceId: serviceId,
+        workplaceId: workplaceId
+    };
+
+    fetch('/service-workplace/link', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'  // Важливо використовувати 'application/json'
+        },
+        body: JSON.stringify(requestData)
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Послугу успішно прив\'язано до робочого місця');
+                location.reload(); // Перезавантаження сторінки для відображення змін
+            } else {
+                alert('Не вдалося прив\'язати послугу: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Сталася помилка при виконанні запиту');
+        });
+});
+
+// Відв'язка послуги від робочого місця
+document.getElementById('unlinkServiceForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const serviceId = document.getElementById('serviceIdToUnlink').value;
+    const workplaceId = document.getElementById('workplaceIdToUnlink').value;
+
+    if (!serviceId || !workplaceId) {
+        alert('Будь ласка, виберіть послугу та робоче місце для відв\'язки.');
+        return;
+    }
+
+    const requestData = {
+        serviceId: serviceId,
+        workplaceId: workplaceId
+    };
+
+    fetch('/service-workplace/unlink', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'  // Важливо використовувати 'application/json'
+        },
+        body: JSON.stringify(requestData)
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Послугу успішно від\'язано від робочого місця');
+                location.reload(); // Перезавантаження сторінки для відображення змін
+            } else {
+                alert('Не вдалося від\'язати послугу: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Сталася помилка при виконанні запиту');
+        });
 });

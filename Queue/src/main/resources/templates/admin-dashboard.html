@@ -71,6 +71,7 @@
         <button class="button" onclick="openSubMenu('services-menu')">Керування послугами</button>
         <button class="button" onclick="openSubMenu('workplaces-menu')">Керування робочими місцями</button>
         <button class="button" onclick="openSubMenu('employees-menu')">Керування працівниками</button>
+        <button class="button" onclick="openSubMenu('service-workplace-bind-menu')">Керування прив'язкою послуг до робочих місць</button>
         <button class="button" onclick="openSubMenu('reports-menu')">Звіти</button>
     </div>
     <div class="top-bar-right">
@@ -96,6 +97,10 @@
     <button class="button" onclick="openModal('addEmployeeModal')">Додати працівника</button>
     <button class="button" onclick="openModal('updateEmployeeModal')">Оновити працівника</button>
     <button class="button" onclick="openModal('deleteEmployeeModal')">Видалити працівника</button>
+</div>
+<div class="submenu" id="service-workplace-bind-menu">
+    <button class="button" onclick="openModal('linkServiceToWorkplaceModal')">Прив'язати послугу до робочого місця</button>
+    <button class="button" onclick="openModal('unlinkServiceFromWorkplaceModal')">Відв'язати послугу від робочого місця</button>
 </div>
 
 <div class="submenu" id="reports-menu">
@@ -245,6 +250,43 @@
                 <!-- Динамічно завантажимо список працівників -->
             </select>
             <button type="submit" class="button">Видалити працівника</button>
+        </form>
+    </div>
+</div>
+
+<!--Прив'язка послуг до робочих місць-->
+<div class="modal" id="linkServiceToWorkplaceModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('linkServiceToWorkplaceModal')">&times;</span>
+        <h2>Прив'язати послугу до робочого місця</h2>
+        <form id="linkServiceForm">
+            <select id="serviceIdToLink" required>
+                <option value="">Виберіть послугу</option>
+                <!-- Динамічно завантажимо список послуг -->
+            </select>
+            <select id="workplaceIdToLink" required>
+                <option value="">Виберіть робоче місце</option>
+                <!-- Динамічно завантажимо список робочих місць -->
+            </select>
+            <button type="submit" class="button">Прив'язати</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="unlinkServiceFromWorkplaceModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('unlinkServiceFromWorkplaceModal')">&times;</span>
+        <h2>Відв'язати послугу від робочого місця</h2>
+        <form id="unlinkServiceForm">
+            <select id="serviceIdToUnlink" required>
+                <option value="">Виберіть послугу</option>
+                <!-- Динамічно завантажимо список послуг -->
+            </select>
+            <select id="workplaceIdToUnlink" required>
+                <option value="">Виберіть робоче місце</option>
+                <!-- Динамічно завантажимо список робочих місць -->
+            </select>
+            <button type="submit" class="button">Відв'язати</button>
         </form>
     </div>
 </div>
