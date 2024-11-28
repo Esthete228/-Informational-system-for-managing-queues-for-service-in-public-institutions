@@ -1,5 +1,6 @@
 package com.magistracy.queue.controllers;
 
+import com.magistracy.queue.entities.ServiceWorkplace;
 import com.magistracy.queue.entities.Workplace;
 import com.magistracy.queue.services.ServiceWorkplaceService;
 import com.magistracy.queue.services.WorkplaceService;

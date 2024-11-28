@@ -1,9 +1,11 @@
 package com.magistracy.queue.controllers;
 
 import com.magistracy.queue.entities.ServiceEntity;
+import com.magistracy.queue.entities.ServiceWorkplace;
 import com.magistracy.queue.repositories.ServiceEntityRepository;
 import com.magistracy.queue.repositories.WorkplaceRepository;
 import com.magistracy.queue.services.ServiceManagementService;
+import com.magistracy.queue.services.ServiceWorkplaceService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,9 +17,11 @@ import java.util.Map;
 public class ServiceController {
 
     private final ServiceManagementService serviceManagementService;
+    private final ServiceWorkplaceService serviceWorkplaceService;
 
-    public ServiceController(ServiceManagementService serviceManagementService) {
+    public ServiceController(ServiceManagementService serviceManagementService, ServiceWorkplaceService serviceWorkplaceService) {
         this.serviceManagementService = serviceManagementService;
+        this.serviceWorkplaceService = serviceWorkplaceService;
     }
 
     // Отримати всі послуги

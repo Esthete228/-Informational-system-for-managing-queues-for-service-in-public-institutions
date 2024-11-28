@@ -57,8 +57,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const deleteSelect = document.getElementById('workplaceIdToDelete');
             const addWorkplaceSelect = document.getElementById('assignedWorkplace');
             const updateWorkplaceSelect = document.getElementById('updatedAssignedWorkplace');
-            const workplaceLinkSelect = document.getElementById('workplaceIdToLink');
-            const workplaceUnlinkSelect = document.getElementById('workplaceIdToUnlink');
+            const workplaceLinkSelect = document.getElementById('workplaceIdsToLink');
+            const workplaceUnlinkSelect = document.getElementById('workplaceIdsToUnlink');
 
             // Очищаємо попередній вміст
             updateSelect.innerHTML = deleteSelect.innerHTML = addWorkplaceSelect.innerHTML = updateWorkplaceSelect.innerHTML = '<option value="">Виберіть робоче місце</option>';
@@ -98,28 +98,13 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Невірний формат даних робочих місць');
         }
     });
-
-    // Завантаження працівників
-    fetchData('/employees/all-employees', employees => {
-        console.log('Працівники:', employees);
-        const updateSelect = document.getElementById('employeeIdToUpdate');
-        const deleteSelect = document.getElementById('employeeIdToDelete');
-        employees.forEach(employee => {
-            const option = document.createElement('option');
-            option.value = employee.id;
-            option.textContent = `${employee.username} (Робоче місце: ${employee.workplace ? employee.workplace.workplaceName : 'Не призначено'})`;
-            updateSelect.appendChild(option);
-            deleteSelect.appendChild(option.cloneNode(true));
-        });
-    });
-
     // Завантаження послуг
     fetchData('/services/all-services', services => {
         console.log('Послуги:', services);
         const updateSelect = document.getElementById('serviceIdToUpdate');
         const deleteSelect = document.getElementById('serviceIdToDelete');
-        const serviceLinkSelect = document.getElementById('serviceIdToLink');
-        const serviceUnlinkSelect = document.getElementById('serviceIdToUnlink');
+        const serviceLinkSelect = document.getElementById('serviceIdsToLink');
+        const serviceUnlinkSelect = document.getElementById('serviceIdsToUnlink');
         updateSelect.innerHTML = deleteSelect.innerHTML = '<option value="">Виберіть послугу</option>';
 
         services.forEach(service => {
@@ -138,6 +123,19 @@ document.addEventListener('DOMContentLoaded', function() {
             optionUnlink.value = service.id;
             optionUnlink.textContent = service.serviceName;
             serviceUnlinkSelect.appendChild(optionUnlink);
+        });
+    });
+    // Завантаження працівників
+    fetchData('/employees/all-employees', employees => {
+        console.log('Працівники:', employees);
+        const updateSelect = document.getElementById('employeeIdToUpdate');
+        const deleteSelect = document.getElementById('employeeIdToDelete');
+        employees.forEach(employee => {
+            const option = document.createElement('option');
+            option.value = employee.id;
+            option.textContent = `${employee.username} (Робоче місце: ${employee.workplace ? employee.workplace.workplaceName : 'Не призначено'})`;
+            updateSelect.appendChild(option);
+            deleteSelect.appendChild(option.cloneNode(true));
         });
     });
 });
@@ -402,36 +400,37 @@ document.getElementById('deleteWorkplaceForm').addEventListener('submit', functi
     }).catch(error => console.error('Error:', error));
 });
 
-// Прив'язка послуги до робочого місця
+// Прив'язка послуг до робочих місць
 document.getElementById('linkServiceForm').addEventListener('submit', function(event) {
     event.preventDefault();
-    const serviceId = document.getElementById('serviceIdToLink').value;
-    const workplaceId = document.getElementById('workplaceIdToLink').value;
 
-    if (!serviceId || !workplaceId) {
-        alert('Будь ласка, виберіть послугу та робоче місце.');
+    const serviceIds = Array.from(document.getElementById('serviceIdsToLink').selectedOptions).map(option => option.value);
+    const workplaceIds = Array.from(document.getElementById('workplaceIdsToLink').selectedOptions).map(option => option.value);
+
+    if (serviceIds.length === 0 || workplaceIds.length === 0) {
+        alert('Будь ласка, виберіть хоча б одну послугу та робоче місце.');
         return;
     }
 
     const requestData = {
-        serviceId: serviceId,
-        workplaceId: workplaceId
+        serviceIds: serviceIds,
+        workplaceIds: workplaceIds
     };
 
     fetch('/service-workplace/link', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'  // Важливо використовувати 'application/json'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestData)
     })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                alert('Послугу успішно прив\'язано до робочого місця');
-                location.reload(); // Перезавантаження сторінки для відображення змін
+                alert('Послуги успішно прив\'язані до робочих місць');
+                location.reload();
             } else {
-                alert('Не вдалося прив\'язати послугу: ' + data.message);
+                alert('Не вдалося прив\'язати послуги: ' + data.message);
             }
         })
         .catch(error => {
@@ -443,23 +442,23 @@ document.getElementById('linkServiceForm').addEventListener('submit', function(e
 // Відв'язка послуги від робочого місця
 document.getElementById('unlinkServiceForm').addEventListener('submit', function(event) {
     event.preventDefault();
-    const serviceId = document.getElementById('serviceIdToUnlink').value;
-    const workplaceId = document.getElementById('workplaceIdToUnlink').value;
+    const serviceIds = Array.from(document.getElementById('serviceIdsToUnlink').selectedOptions).map(option => option.value);
+    const workplaceIds = Array.from(document.getElementById('workplaceIdsToUnlink').selectedOptions).map(option => option.value);
 
-    if (!serviceId || !workplaceId) {
+    if (serviceIds.length === 0 || workplaceIds.length === 0) {
         alert('Будь ласка, виберіть послугу та робоче місце для відв\'язки.');
         return;
     }
 
     const requestData = {
-        serviceId: serviceId,
-        workplaceId: workplaceId
+        serviceIds: serviceIds,
+        workplaceIds: workplaceIds
     };
 
     fetch('/service-workplace/unlink', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'  // Важливо використовувати 'application/json'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestData)
     })

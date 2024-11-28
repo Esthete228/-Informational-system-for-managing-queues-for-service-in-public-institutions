@@ -1,14 +1,14 @@
 package com.magistracy.queue.controllers;
 
+import com.magistracy.queue.entities.ServiceWorkplace;
 import com.magistracy.queue.services.ServiceWorkplaceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/service-workplace")
@@ -23,8 +23,8 @@ public class ServiceWorkplaceController {
 
     // DTO для отримання даних
     public static class LinkRequest {
-        public Long serviceId;
-        public Long workplaceId;
+        public List<Long> serviceIds;
+        public List<Long> workplaceIds;
     }
 
     // Статус відповіді
@@ -41,14 +41,18 @@ public class ServiceWorkplaceController {
     // Link service to workplace
     @PostMapping("/link")
     @ResponseBody
-    public ResponseEntity<ResponseStatus> linkServiceToWorkplace(@RequestBody LinkRequest request) {
+    public ResponseEntity<ResponseStatus> linkServicesToWorkplaces(@RequestBody LinkRequest request) {
         try {
-            // Викликаємо сервіс для прив'язки послуги до робочого місця
-            serviceWorkplaceService.linkServiceToWorkplace(request.serviceId, request.workplaceId);
-            return ResponseEntity.ok(new ResponseStatus("success", "Послугу успішно прив'язано до робочого місця"));
+            // Обробляємо кожен зв'язок послуги з робочим місцем
+            for (Long serviceId : request.serviceIds) {
+                for (Long workplaceId : request.workplaceIds) {
+                    serviceWorkplaceService.linkServiceToWorkplace(serviceId, workplaceId);
+                }
+            }
+            return ResponseEntity.ok(new ResponseStatus("success", "Послуги успішно прив'язані до робочих місць"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ResponseStatus("error", "Не вдалося прив'язати послугу до робочого місця: " + e.getMessage()));
+                    .body(new ResponseStatus("error", "Не вдалося прив'язати послуги: " + e.getMessage()));
         }
     }
 
@@ -57,12 +61,36 @@ public class ServiceWorkplaceController {
     @ResponseBody
     public ResponseEntity<ResponseStatus> unlinkServiceFromWorkplace(@RequestBody LinkRequest request) {
         try {
-            // Викликаємо сервіс для відв'язки послуги від робочого місця
-            serviceWorkplaceService.unlinkServiceFromWorkplace(request.serviceId, request.workplaceId);
+            // Обробляємо кожен зв'язок послуги з робочим місцем
+            for (Long serviceId : request.serviceIds) {
+                for (Long workplaceId : request.workplaceIds) {
+                    serviceWorkplaceService.unlinkServiceFromWorkplace(serviceId, workplaceId);
+                }
+            }
             return ResponseEntity.ok(new ResponseStatus("success", "Послугу успішно від\'язано від робочого місця"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ResponseStatus("error", "Не вдалося від\'язати послугу від робочого місця: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/available-services/{workplaceId}")
+    public ResponseEntity<List<ServiceWorkplace>> getAvailableServices(@PathVariable Long workplaceId) {
+        try {
+            List<ServiceWorkplace> availableServices = serviceWorkplaceService.getServicesForWorkplace(workplaceId);
+            return ResponseEntity.ok(availableServices);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    @GetMapping("/available-workplaces/{serviceId}")
+    public ResponseEntity<List<ServiceWorkplace>> getAvailableWorkplaces(@PathVariable Long serviceId) {
+        try {
+            List<ServiceWorkplace> availableWorkplaces = serviceWorkplaceService.getWorkplacesForService(serviceId);
+            return ResponseEntity.ok(availableWorkplaces);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
         }
     }
 }

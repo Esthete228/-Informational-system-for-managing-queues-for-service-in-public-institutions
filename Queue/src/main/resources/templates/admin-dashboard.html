@@ -260,11 +260,11 @@
         <span class="close" onclick="closeModal('linkServiceToWorkplaceModal')">&times;</span>
         <h2>Прив'язати послугу до робочого місця</h2>
         <form id="linkServiceForm">
-            <select id="serviceIdToLink" required>
+            <select id="serviceIdsToLink" multiple required>
                 <option value="">Виберіть послугу</option>
                 <!-- Динамічно завантажимо список послуг -->
             </select>
-            <select id="workplaceIdToLink" required>
+            <select id="workplaceIdsToLink" multiple required>
                 <option value="">Виберіть робоче місце</option>
                 <!-- Динамічно завантажимо список робочих місць -->
             </select>
@@ -278,11 +278,11 @@
         <span class="close" onclick="closeModal('unlinkServiceFromWorkplaceModal')">&times;</span>
         <h2>Відв'язати послугу від робочого місця</h2>
         <form id="unlinkServiceForm">
-            <select id="serviceIdToUnlink" required>
+            <select id="serviceIdsToUnlink" multiple required>
                 <option value="">Виберіть послугу</option>
                 <!-- Динамічно завантажимо список послуг -->
             </select>
-            <select id="workplaceIdToUnlink" required>
+            <select id="workplaceIdsToUnlink" multiple required>
                 <option value="">Виберіть робоче місце</option>
                 <!-- Динамічно завантажимо список робочих місць -->
             </select>

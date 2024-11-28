@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ServiceWorkplaceService {
@@ -31,6 +30,7 @@ public class ServiceWorkplaceService {
 
     // Get all services linked to a particular workplace
     public List<ServiceWorkplace> getServicesForWorkplace(Long workplaceId) {
+        // Припускаємо, що є таблиця або зв'язок між послугами та робочими місцями
         return serviceWorkplaceRepository.findByWorkplaceId(workplaceId);
     }
 
@@ -47,7 +47,6 @@ public class ServiceWorkplaceService {
         Workplace workplace = workplaceRepository.findById(workplaceId)
                 .orElseThrow(() -> new RuntimeException("Workplace not found"));
 
-        // Перевірка на існування
         boolean exists = serviceWorkplaceRepository.findByServiceIdAndWorkplaceId(serviceId, workplaceId).stream()
                 .anyMatch(sw -> sw.getService().equals(service) && sw.getWorkplace().equals(workplace));
 
