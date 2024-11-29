@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ServiceWorkplaceService {
@@ -28,15 +29,20 @@ public class ServiceWorkplaceService {
         this.workplaceRepository = workplaceRepository;
     }
 
-    // Get all services linked to a particular workplace
-    public List<ServiceWorkplace> getServicesForWorkplace(Long workplaceId) {
-        // Припускаємо, що є таблиця або зв'язок між послугами та робочими місцями
-        return serviceWorkplaceRepository.findByWorkplaceId(workplaceId);
+    // Отримання доступних робочих місць для послуги
+    public List<Workplace> getWorkplacesForService(Long serviceId) {
+        return serviceWorkplaceRepository.findByServiceId(serviceId)
+                .stream()
+                .map(ServiceWorkplace::getWorkplace)
+                .collect(Collectors.toList());
     }
 
-    // Get all workplaces linked to a particular service
-    public List<ServiceWorkplace> getWorkplacesForService(Long serviceId) {
-        return serviceWorkplaceRepository.findByServiceId(serviceId);
+    // Отримання доступних послуг для робочого місця
+    public List<ServiceEntity> getServicesForWorkplace(Long workplaceId) {
+        return serviceWorkplaceRepository.findByWorkplaceId(workplaceId)
+                .stream()
+                .map(ServiceWorkplace::getService)
+                .collect(Collectors.toList());
     }
 
     // Link a service to a workplace
@@ -62,7 +68,7 @@ public class ServiceWorkplaceService {
     @Transactional
     public void unlinkServiceFromWorkplace(Long serviceId, Long workplaceId) {
         // Знаходимо всі зв'язки послуги і робочого місця
-        List<ServiceWorkplace> linkedServices = serviceWorkplaceRepository.findByServiceIdAndWorkplaceId(serviceId, workplaceId);
+        List<ServiceWorkplace> linkedServices = serviceWorkplaceRepository.findAllByServiceIdAndWorkplaceId(serviceId, workplaceId);
 
         // Якщо зв'язок знайдений, видаляємо його
         serviceWorkplaceRepository.deleteAll(linkedServices);

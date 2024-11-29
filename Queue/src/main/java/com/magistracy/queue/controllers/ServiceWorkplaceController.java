@@ -1,6 +1,7 @@
 package com.magistracy.queue.controllers;
 
-import com.magistracy.queue.entities.ServiceWorkplace;
+import com.magistracy.queue.entities.ServiceEntity;
+import com.magistracy.queue.entities.Workplace;
 import com.magistracy.queue.services.ServiceWorkplaceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -75,9 +76,9 @@ public class ServiceWorkplaceController {
     }
 
     @GetMapping("/available-services/{workplaceId}")
-    public ResponseEntity<List<ServiceWorkplace>> getAvailableServices(@PathVariable Long workplaceId) {
+    public ResponseEntity<List<ServiceEntity>> getAvailableServices(@PathVariable Long workplaceId) {
         try {
-            List<ServiceWorkplace> availableServices = serviceWorkplaceService.getServicesForWorkplace(workplaceId);
+            List<ServiceEntity> availableServices = serviceWorkplaceService.getServicesForWorkplace(workplaceId);
             return ResponseEntity.ok(availableServices);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(null);
@@ -85,9 +86,9 @@ public class ServiceWorkplaceController {
     }
 
     @GetMapping("/available-workplaces/{serviceId}")
-    public ResponseEntity<List<ServiceWorkplace>> getAvailableWorkplaces(@PathVariable Long serviceId) {
+    public ResponseEntity<List<Workplace>> getAvailableWorkplaces(@PathVariable Long serviceId) {
         try {
-            List<ServiceWorkplace> availableWorkplaces = serviceWorkplaceService.getWorkplacesForService(serviceId);
+            List<Workplace> availableWorkplaces = serviceWorkplaceService.getWorkplacesForService(serviceId);
             return ResponseEntity.ok(availableWorkplaces);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(null);

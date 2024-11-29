@@ -1,15 +1,7 @@
-// QueueService.java
-
 package com.magistracy.queue.services;
 
-import com.magistracy.queue.entities.Appointment;
-import com.magistracy.queue.entities.Queue;
-import com.magistracy.queue.entities.ServiceEntity;
-import com.magistracy.queue.entities.Workplace;
-import com.magistracy.queue.repositories.AppointmentRepository;
-import com.magistracy.queue.repositories.QueueRepository;
-import com.magistracy.queue.repositories.ServiceEntityRepository;
-import com.magistracy.queue.repositories.WorkplaceRepository;
+import com.magistracy.queue.entities.*;
+import com.magistracy.queue.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -18,24 +10,28 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 public class QueueService {
 
     private final AppointmentRepository appointmentRepository;
     private final QueueRepository queueRepository;
-    private final ServiceEntityRepository serviceEntityRepository;
     private final WorkplaceRepository workplaceRepository;
+    private final ServiceWorkplaceRepository serviceWorkplaceRepository;
+    private final WorkplaceService workplaceService;  // Додаємо WorkplaceService для роботи з робочими місцями
+
     private int ticketNumberCounter = 0;
 
     @Autowired
     public QueueService(AppointmentRepository appointmentRepository, QueueRepository queueRepository,
-                        ServiceEntityRepository serviceEntityRepository, WorkplaceRepository workplaceRepository) {
+                        WorkplaceRepository workplaceRepository,
+                        ServiceWorkplaceRepository serviceWorkplaceRepository, WorkplaceService workplaceService) {
         this.appointmentRepository = appointmentRepository;
         this.queueRepository = queueRepository;
-        this.serviceEntityRepository = serviceEntityRepository;
         this.workplaceRepository = workplaceRepository;
+        this.serviceWorkplaceRepository = serviceWorkplaceRepository;
+        this.workplaceService = workplaceService;
     }
 
     // Автоматичне переміщення попередніх записів у чергу
@@ -65,10 +61,16 @@ public class QueueService {
             Queue queue = new Queue();
             queue.setServiceEntity(appointment.getServiceEntity());
 
-            // Перевірка завантаженості та вибір робочого місця
-            Workplace workplace = findLeastLoadedWorkplace();
+            // Перевірка завантаженості та вибір робочого місця для послуги
+            Workplace workplace = workplaceService.findLeastLoadedWorkplaceForService(appointment.getServiceEntity().getId());
+            if (workplace == null) {
+                System.out.println("Не знайдено доступного робочого місця для послуги " + appointment.getServiceEntity().getServiceName());
+                continue; // Пропускаємо запис, якщо немає доступного робочого місця
+            }
+
+            // Перевіряємо, чи не перевищено ліміт для робочого місця
             if (isWorkplaceOverloaded(workplace.getId(), ticketLimit)) {
-                workplace = findLeastLoadedWorkplace();
+                workplace = workplaceService.findLeastLoadedWorkplaceForService(appointment.getServiceEntity().getId());
             }
 
             queue.setWorkplace(workplace);
@@ -81,84 +83,70 @@ public class QueueService {
     }
 
     public List<Queue> getCurrentQueue(Long workplaceId) {
-        // Fetch only ACTIVE status tickets for the specified workplace
         return queueRepository.findByWorkplaceIdAndStatus(workplaceId, Queue.QueueStatus.ACTIVE);
     }
 
     public List<Queue> getInProgressTickets() {
         List<Queue> inProgressTickets = queueRepository.findByStatus(Queue.QueueStatus.IN_PROGRESS);
-        inProgressTickets.forEach(queue -> queue.getWorkplace().getWorkplaceName()); // Завантаження імені робочого місця
+        inProgressTickets.forEach(queue -> queue.getWorkplace().getWorkplaceName());
         return inProgressTickets;
     }
 
     public Queue getCurrentClient(Long workplaceId) {
-        // Fetch the current client in IN_PROGRESS status for the specified workplace
         return queueRepository.findFirstByWorkplaceIdAndStatus(workplaceId, Queue.QueueStatus.IN_PROGRESS)
                 .orElse(null);
     }
 
-    private Workplace findLeastLoadedWorkplace() {
-        List<Workplace> workplaces = workplaceRepository.findAll();
-
-        return workplaces.stream()
-                .min((wp1, wp2) -> {
-                    int wp1Load = queueRepository.findByWorkplaceIdAndStatus(wp1.getId(), Queue.QueueStatus.ACTIVE).size();
-                    int wp2Load = queueRepository.findByWorkplaceIdAndStatus(wp2.getId(), Queue.QueueStatus.ACTIVE).size();
-                    return Integer.compare(wp1Load, wp2Load);
-                })
-                .orElseThrow(() -> new RuntimeException("Робочі місця недоступні"));
-    }
-
+    // Перевірка, чи перевищено ліміт для робочого місця
     private boolean isWorkplaceOverloaded(Long workplaceId, int limit) {
         int ticketCount = queueRepository.findByWorkplaceIdAndStatus(workplaceId, Queue.QueueStatus.ACTIVE).size();
         return ticketCount >= limit;
     }
 
+    // Створення талону для послуги і робочого місця
     public Queue createTicket(Long serviceId, Long workplaceId) {
-        ServiceEntity serviceEntity = serviceEntityRepository.findById(serviceId)
-                .orElseThrow(() -> new RuntimeException("Послуга не знайдена"));
-        Workplace workplace = workplaceRepository.findById(workplaceId)
-                .orElseThrow(() -> new RuntimeException("Робоче місце не знайдено"));
+        Optional<ServiceWorkplace> serviceWorkplace = serviceWorkplaceRepository
+                .findByServiceIdAndWorkplaceId(serviceId, workplaceId);
 
-        int ticketLimit = 5; // Максимальна кількість талонів на робочому місці
-        if (isWorkplaceOverloaded(workplaceId, ticketLimit)) {
-            workplace = findLeastLoadedWorkplace();
+        if (serviceWorkplace.isEmpty()) {
+            throw new IllegalArgumentException("Немає доступного робочого місця для цієї послуги.");
         }
 
         Queue queue = new Queue();
-        queue.setServiceEntity(serviceEntity);
-        queue.setWorkplace(workplace);
-        queue.setTicketNumber(generateTicketNumber());
+        queue.setServiceEntity(serviceWorkplace.get().getService());
+        queue.setWorkplace(serviceWorkplace.get().getWorkplace());
         queue.setStatus(Queue.QueueStatus.ACTIVE);
+        queue.setTicketNumber(generateTicketNumber());
 
         return queueRepository.save(queue);
     }
 
-    public Queue updateTicket(Long ticketId, Long newServiceId, Long newWorkplaceId) {
-        Queue ticket = queueRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Талон не знайдено"));
-
-        if (newServiceId != null) {
-            ServiceEntity newServiceEntity = serviceEntityRepository.findById(newServiceId)
-                    .orElseThrow(() -> new RuntimeException("Нова послуга не знайдена"));
-            ticket.setServiceEntity(newServiceEntity);
-        }
-
-        if (newWorkplaceId != null) {
-            Workplace newWorkplace = workplaceRepository.findById(newWorkplaceId)
-                    .orElseThrow(() -> new RuntimeException("Нове робоче місце не знайдено"));
-            ticket.setWorkplace(newWorkplace);
-        }
-
-        return queueRepository.save(ticket);
+    private int generateTicketNumber() {
+        return ++ticketNumberCounter;
     }
 
-    public void deleteTicket(Long ticketId) {
-        if (queueRepository.existsById(ticketId)) {
-            queueRepository.deleteById(ticketId);
-        } else {
-            throw new RuntimeException("Талон не знайдено");
+    // Оновлення талону
+    public Queue updateTicket(Long queueId, Long newServiceId, Long newWorkplaceId) {
+        Queue queue = queueRepository.findById(queueId)
+                .orElseThrow(() -> new IllegalArgumentException("Талон не знайдено"));
+
+        Optional<ServiceWorkplace> serviceWorkplace = serviceWorkplaceRepository
+                .findByServiceIdAndWorkplaceId(newServiceId, newWorkplaceId);
+
+        if (serviceWorkplace.isEmpty()) {
+            throw new IllegalArgumentException("Немає доступного робочого місця для цієї послуги.");
         }
+
+        queue.setServiceEntity(serviceWorkplace.get().getService());
+        queue.setWorkplace(serviceWorkplace.get().getWorkplace());
+
+        return queueRepository.save(queue);
+    }
+
+    public void deleteTicket(Long queueId) {
+        Queue queue = queueRepository.findById(queueId)
+                .orElseThrow(() -> new IllegalArgumentException("Талон не знайдено"));
+        queueRepository.delete(queue);
     }
 
     public Queue callNextClient(Long workplaceId) {
@@ -171,15 +159,17 @@ public class QueueService {
         throw new RuntimeException("Клієнтів немає в черзі");
     }
 
-    public Queue transferClient(Long queueId, Long newWorkplaceId) {
+    public Queue transferClient(Long queueId, Long toWorkplaceId) {
         Queue queue = queueRepository.findById(queueId)
                 .orElseThrow(() -> new RuntimeException("Талон не знайдено"));
 
-        Workplace newWorkplace = workplaceRepository.findById(newWorkplaceId)
+        Workplace newWorkplace = workplaceRepository.findById(toWorkplaceId)
                 .orElseThrow(() -> new RuntimeException("Нове робоче місце не знайдено"));
 
         queue.setWorkplace(newWorkplace);
-        queue.setStatus(Queue.QueueStatus.ACTIVE); // Повертаємо статус "ACTIVE" для нового робочого місця
+        queue.setStatus(Queue.QueueStatus.ACTIVE);
+
+        // Логіка для перенаправлення клієнта (наприклад, зміна статусу або іншої інформації)
         return queueRepository.save(queue);
     }
 
@@ -191,11 +181,7 @@ public class QueueService {
             throw new RuntimeException("Можна завершувати тільки сесії зі статусом IN_PROGRESS");
         }
 
-        queue.setStatus(Queue.QueueStatus.COMPLETED); // Повертаємо статус "ACTIVE" для нового робочого місця
-        queueRepository.save(queue); // Видаляємо талон при завершенні сеансу
-    }
-
-    private int generateTicketNumber() {
-        return ++ticketNumberCounter;
+        queue.setStatus(Queue.QueueStatus.COMPLETED);
+        queueRepository.save(queue);
     }
 }

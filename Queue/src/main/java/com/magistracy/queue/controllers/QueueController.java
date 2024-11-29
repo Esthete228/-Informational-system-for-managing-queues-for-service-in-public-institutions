@@ -1,7 +1,9 @@
 package com.magistracy.queue.controllers;
 
 import com.magistracy.queue.entities.Queue;
+import com.magistracy.queue.entities.Workplace;
 import com.magistracy.queue.services.QueueService;
+import com.magistracy.queue.services.WorkplaceService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,25 +18,38 @@ import java.util.Map;
 public class QueueController {
 
     private final QueueService queueService;
+    private final WorkplaceService workplaceService;
 
-    public QueueController(QueueService queueService) {
+    public QueueController(QueueService queueService, WorkplaceService workplaceService) {
         this.queueService = queueService;
+        this.workplaceService = workplaceService;
     }
 
-    @PostMapping("/create-ticket")
-    public ResponseEntity<Queue> createTicket(@RequestBody Map<String, Long> payload) {
-        Long serviceId = payload.get("serviceId");
-        Long workplaceId = payload.get("workplaceId");
-        Queue newQueue = queueService.createTicket(serviceId, workplaceId);
-        return ResponseEntity.ok(newQueue);
+    @PostMapping("/create-ticket/{serviceId}")
+    public ResponseEntity<Queue> createTicket(@PathVariable Long serviceId) {
+        // Знаходимо відповідне робоче місце для послуги
+        Workplace workplace = workplaceService.findLeastLoadedWorkplaceForService(serviceId);
+
+        if (workplace == null) {
+            throw new IllegalArgumentException("Немає доступного робочого місця для цієї послуги.");
+        }
+
+        Queue queue = queueService.createTicket(serviceId, workplace.getId());
+        return ResponseEntity.ok(queue);
     }
 
     @PutMapping("/update-ticket/{queueId}")
     public ResponseEntity<Queue> updateTicket(@PathVariable Long queueId, @RequestBody Map<String, Long> payload) {
         Long newServiceId = payload.get("newServiceId");
-        Long newWorkplaceId = payload.get("newWorkplaceId");
 
-        Queue updatedQueue = queueService.updateTicket(queueId, newServiceId, newWorkplaceId);
+        // Знаходимо відповідне робоче місце для нової послуги
+        Workplace workplace = workplaceService.findLeastLoadedWorkplaceForService(newServiceId);
+
+        if (workplace == null) {
+            throw new IllegalArgumentException("Немає доступного робочого місця для цієї послуги.");
+        }
+
+        Queue updatedQueue = queueService.updateTicket(queueId, newServiceId, workplace.getId());
         return ResponseEntity.ok(updatedQueue);
     }
 
@@ -90,6 +105,11 @@ public class QueueController {
     public ResponseEntity<?> transferClient(@PathVariable Long queueId,
                                             @RequestBody Map<String, Long> payload) {
         Long toWorkplaceId = payload.get("toWorkplaceId");
+
+        if (toWorkplaceId == null) {
+            return ResponseEntity.badRequest().body("Відсутні необхідні дані для перенаправлення.");
+        }
+
         try {
             Queue updatedQueue = queueService.transferClient(queueId, toWorkplaceId);
             return ResponseEntity.ok(updatedQueue);
