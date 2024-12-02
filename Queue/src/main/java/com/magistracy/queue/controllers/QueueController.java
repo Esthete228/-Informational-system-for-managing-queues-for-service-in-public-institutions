@@ -3,7 +3,6 @@ package com.magistracy.queue.controllers;
 import com.magistracy.queue.entities.Queue;
 import com.magistracy.queue.entities.Workplace;
 import com.magistracy.queue.services.QueueService;
-import com.magistracy.queue.services.WorkplaceService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,17 +17,15 @@ import java.util.Map;
 public class QueueController {
 
     private final QueueService queueService;
-    private final WorkplaceService workplaceService;
 
-    public QueueController(QueueService queueService, WorkplaceService workplaceService) {
+    public QueueController(QueueService queueService) {
         this.queueService = queueService;
-        this.workplaceService = workplaceService;
     }
 
     @PostMapping("/create-ticket/{serviceId}")
     public ResponseEntity<Queue> createTicket(@PathVariable Long serviceId) {
         // Знаходимо відповідне робоче місце для послуги
-        Workplace workplace = workplaceService.findLeastLoadedWorkplaceForService(serviceId);
+        Workplace workplace = queueService.findLeastLoadedWorkplaceForService(serviceId);
 
         if (workplace == null) {
             throw new IllegalArgumentException("Немає доступного робочого місця для цієї послуги.");
@@ -43,7 +40,7 @@ public class QueueController {
         Long newServiceId = payload.get("newServiceId");
 
         // Знаходимо відповідне робоче місце для нової послуги
-        Workplace workplace = workplaceService.findLeastLoadedWorkplaceForService(newServiceId);
+        Workplace workplace = queueService.findLeastLoadedWorkplaceForService(newServiceId);
 
         if (workplace == null) {
             throw new IllegalArgumentException("Немає доступного робочого місця для цієї послуги.");

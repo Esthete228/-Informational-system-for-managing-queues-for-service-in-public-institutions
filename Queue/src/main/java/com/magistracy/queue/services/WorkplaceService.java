@@ -49,27 +49,4 @@ public class WorkplaceService {
     public Workplace findById(Long id) {
         return workplaceRepository.findById(id).orElse(null);
     }
-
-    public Workplace findLeastLoadedWorkplaceForService(Long serviceId) {
-        // Отримуємо робочі місця, які можуть обслуговувати цю послугу
-        List<Workplace> workplaces = workplaceRepository.findAll();
-
-        // Фільтруємо робочі місця, які підтримують цю послугу
-        List<ServiceWorkplace> serviceWorkplaces = serviceWorkplaceRepository.findByServiceId(serviceId);
-
-        // Знаходимо робочі місця, пов'язані з послугою
-        List<Workplace> availableWorkplaces = workplaces.stream()
-                .filter(workplace -> serviceWorkplaces.stream()
-                        .anyMatch(serviceWorkplace -> serviceWorkplace.getWorkplace().equals(workplace)))
-                .toList();
-
-        if (availableWorkplaces.isEmpty()) {
-            return null; // Якщо немає доступних робочих місць для цієї послуги
-        }
-
-        // Повертаємо робоче місце з мінімальним навантаженням
-        return availableWorkplaces.stream()
-                .min(Comparator.comparingInt(wp -> queueRepository.findByWorkplaceIdAndStatus(wp.getId(), Queue.QueueStatus.ACTIVE).size()))
-                .orElseThrow(() -> new RuntimeException("Робочі місця для цієї послуги недоступні"));
-    }
 }

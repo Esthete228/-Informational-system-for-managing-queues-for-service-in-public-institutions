@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -62,7 +63,7 @@ public class QueueService {
             queue.setServiceEntity(appointment.getServiceEntity());
 
             // Перевірка завантаженості та вибір робочого місця для послуги
-            Workplace workplace = workplaceService.findLeastLoadedWorkplaceForService(appointment.getServiceEntity().getId());
+            Workplace workplace = findLeastLoadedWorkplaceForService(appointment.getServiceEntity().getId());
             if (workplace == null) {
                 System.out.println("Не знайдено доступного робочого місця для послуги " + appointment.getServiceEntity().getServiceName());
                 continue; // Пропускаємо запис, якщо немає доступного робочого місця
@@ -70,7 +71,7 @@ public class QueueService {
 
             // Перевіряємо, чи не перевищено ліміт для робочого місця
             if (isWorkplaceOverloaded(workplace.getId(), ticketLimit)) {
-                workplace = workplaceService.findLeastLoadedWorkplaceForService(appointment.getServiceEntity().getId());
+                workplace = findLeastLoadedWorkplaceForService(appointment.getServiceEntity().getId());
             }
 
             queue.setWorkplace(workplace);
@@ -101,6 +102,29 @@ public class QueueService {
     private boolean isWorkplaceOverloaded(Long workplaceId, int limit) {
         int ticketCount = queueRepository.findByWorkplaceIdAndStatus(workplaceId, Queue.QueueStatus.ACTIVE).size();
         return ticketCount >= limit;
+    }
+
+    public Workplace findLeastLoadedWorkplaceForService(Long serviceId) {
+        // Отримуємо робочі місця, які можуть обслуговувати цю послугу
+        List<Workplace> workplaces = workplaceRepository.findAll();
+
+        // Фільтруємо робочі місця, які підтримують цю послугу
+        List<ServiceWorkplace> serviceWorkplaces = serviceWorkplaceRepository.findByServiceId(serviceId);
+
+        // Знаходимо робочі місця, пов'язані з послугою
+        List<Workplace> availableWorkplaces = workplaces.stream()
+                .filter(workplace -> serviceWorkplaces.stream()
+                        .anyMatch(serviceWorkplace -> serviceWorkplace.getWorkplace().equals(workplace)))
+                .toList();
+
+        if (availableWorkplaces.isEmpty()) {
+            return null; // Якщо немає доступних робочих місць для цієї послуги
+        }
+
+        // Повертаємо робоче місце з мінімальним навантаженням
+        return availableWorkplaces.stream()
+                .min(Comparator.comparingInt(wp -> queueRepository.findByWorkplaceIdAndStatus(wp.getId(), Queue.QueueStatus.ACTIVE).size()))
+                .orElseThrow(() -> new RuntimeException("Робочі місця для цієї послуги недоступні"));
     }
 
     // Створення талону для послуги і робочого місця
