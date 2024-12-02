@@ -245,7 +245,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     forms.delete.addEventListener("submit", function(event) {
         const queueId = document.getElementById("deleteQueueId").value;
-        handleSubmit(event, `/queues/delete-ticket/${queueId}`, 'DELETE', { workplaceId: document.getElementById("workplaceId").value }, "Талон успішно видалено!", "Не вдалося видалити талон.");
+        handleSubmit(event, `/queues/delete-ticket/${queueId}`, 'DELETE', null, "Талон успішно видалено!", "Не вдалося видалити талон.");
     });
 
     document.getElementById("call-next-client").addEventListener("click", async function() {
