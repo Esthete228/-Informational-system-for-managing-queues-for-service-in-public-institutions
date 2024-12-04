@@ -3,6 +3,7 @@ package com.magistracy.queue.controllers;
 import com.magistracy.queue.entities.Queue;
 import com.magistracy.queue.entities.Workplace;
 import com.magistracy.queue.services.QueueService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,7 @@ public class QueueController {
 
     private final QueueService queueService;
 
+    @Autowired
     public QueueController(QueueService queueService) {
         this.queueService = queueService;
     }

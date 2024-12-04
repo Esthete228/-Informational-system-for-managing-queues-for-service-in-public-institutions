@@ -6,9 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -20,68 +18,68 @@ public class QueueService {
     private final QueueRepository queueRepository;
     private final WorkplaceRepository workplaceRepository;
     private final ServiceWorkplaceRepository serviceWorkplaceRepository;
-    private final WorkplaceService workplaceService;  // Додаємо WorkplaceService для роботи з робочими місцями
 
     private int ticketNumberCounter = 0;
+    int ticketLimit = 5;
 
     @Autowired
     public QueueService(AppointmentRepository appointmentRepository, QueueRepository queueRepository,
                         WorkplaceRepository workplaceRepository,
-                        ServiceWorkplaceRepository serviceWorkplaceRepository, WorkplaceService workplaceService) {
+                        ServiceWorkplaceRepository serviceWorkplaceRepository) {
         this.appointmentRepository = appointmentRepository;
         this.queueRepository = queueRepository;
         this.workplaceRepository = workplaceRepository;
         this.serviceWorkplaceRepository = serviceWorkplaceRepository;
-        this.workplaceService = workplaceService;
     }
 
-    // Автоматичне переміщення попередніх записів у чергу
-    @Scheduled(cron = "0 0/1 * * * *") // Що 15 хвилин
+    @Scheduled(cron = "0 * * * * *") // Виконання кожну хвилину
     public void autoMoveAppointmentsToQueue() {
-        LocalDate today = LocalDate.now();
-        moveAppointmentsToQueue(today);
-        System.out.println("Автоматичне переміщення записів у чергу завершено.");
-    }
+        LocalDateTime now = LocalDateTime.now();
 
-    public void moveAppointmentsToQueue(LocalDate date) {
-        LocalDateTime startOfDay = date.atStartOfDay();
-        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
-
+        // Отримуємо записи, у яких час настав або пройшов
         List<Appointment> appointments = appointmentRepository.findAll().stream()
-                .filter(a -> a.getAppointmentTime().isAfter(startOfDay) && a.getAppointmentTime().isBefore(endOfDay))
+                .filter(appointment -> appointment.getAppointmentTime().isBefore(now) || appointment.getAppointmentTime().isEqual(now))
                 .toList();
 
         if (appointments.isEmpty()) {
-            System.out.println("Немає записів для переміщення на дату: " + date);
+            System.out.println("Немає записів для переміщення на час: " + now);
             return;
         }
 
-        int ticketLimit = 5;
-
         for (Appointment appointment : appointments) {
-            Queue queue = new Queue();
-            queue.setServiceEntity(appointment.getServiceEntity());
-
-            // Перевірка завантаженості та вибір робочого місця для послуги
-            Workplace workplace = findLeastLoadedWorkplaceForService(appointment.getServiceEntity().getId());
-            if (workplace == null) {
-                System.out.println("Не знайдено доступного робочого місця для послуги " + appointment.getServiceEntity().getServiceName());
-                continue; // Пропускаємо запис, якщо немає доступного робочого місця
-            }
-
-            // Перевіряємо, чи не перевищено ліміт для робочого місця
-            if (isWorkplaceOverloaded(workplace.getId(), ticketLimit)) {
-                workplace = findLeastLoadedWorkplaceForService(appointment.getServiceEntity().getId());
-            }
-
-            queue.setWorkplace(workplace);
-            queue.setTicketNumber(generateTicketNumber());
-            queue.setStatus(Queue.QueueStatus.ACTIVE);
-
-            queueRepository.save(queue);
-            appointmentRepository.delete(appointment);
+            createQueueFromAppointment(appointment);
         }
+
+        System.out.println("Автоматичне переміщення записів у чергу завершено.");
     }
+
+    private void createQueueFromAppointment(Appointment appointment) {
+
+        Queue queue = new Queue();
+        queue.setServiceEntity(appointment.getServiceEntity());
+
+        // Отримуємо ім'я клієнта з пов'язаного об'єкта Client
+        String clientName = appointment.getClient().getUsername();
+        queue.setClientName(clientName); // Збереження імені клієнта у черзі
+        queue.setCreatedAt(appointment.getAppointmentTime()); // Використовуємо час із запису
+
+        // Пошук відповідного робочого місця
+        Workplace workplace = findLeastLoadedWorkplaceForService(appointment.getServiceEntity().getId());
+        if (workplace == null || isWorkplaceOverloaded(workplace.getId(), ticketLimit)) {
+            System.out.println("Робоче місце перевантажено або не знайдено для послуги " + appointment.getServiceEntity().getServiceName());
+            return;
+        }
+
+        queue.setWorkplace(workplace);
+        queue.setTicketNumber(generateTicketNumber());
+        queue.setStatus(Queue.QueueStatus.ACTIVE);
+
+        queueRepository.save(queue);
+        appointmentRepository.delete(appointment);
+
+        System.out.println("Талон створено для клієнта " + clientName + " на час " + queue.getCreatedAt());
+    }
+
 
     public List<Queue> getCurrentQueue(Long workplaceId) {
         return queueRepository.findByWorkplaceIdAndStatus(workplaceId, Queue.QueueStatus.ACTIVE);
@@ -105,26 +103,28 @@ public class QueueService {
     }
 
     public Workplace findLeastLoadedWorkplaceForService(Long serviceId) {
-        // Отримуємо робочі місця, які можуть обслуговувати цю послугу
+        // Get all workplaces
         List<Workplace> workplaces = workplaceRepository.findAll();
 
-        // Фільтруємо робочі місця, які підтримують цю послугу
+        // Get service-workplace associations
         List<ServiceWorkplace> serviceWorkplaces = serviceWorkplaceRepository.findByServiceId(serviceId);
 
-        // Знаходимо робочі місця, пов'язані з послугою
+        // Find workplaces that are associated with the service
         List<Workplace> availableWorkplaces = workplaces.stream()
                 .filter(workplace -> serviceWorkplaces.stream()
-                        .anyMatch(serviceWorkplace -> serviceWorkplace.getWorkplace().equals(workplace)))
+                        .anyMatch(serviceWorkplace -> serviceWorkplace.getWorkplace().getId().equals(workplace.getId())))
+                .filter(workplace -> !isWorkplaceOverloaded(workplace.getId(), ticketLimit)) // Overload check
                 .toList();
 
+        System.out.println("Available workplaces for service " + serviceId + ": " + availableWorkplaces.size());
+
         if (availableWorkplaces.isEmpty()) {
-            return null; // Якщо немає доступних робочих місць для цієї послуги
+            return null; // No available workplaces
         }
 
-        // Повертаємо робоче місце з мінімальним навантаженням
         return availableWorkplaces.stream()
                 .min(Comparator.comparingInt(wp -> queueRepository.findByWorkplaceIdAndStatus(wp.getId(), Queue.QueueStatus.ACTIVE).size()))
-                .orElseThrow(() -> new RuntimeException("Робочі місця для цієї послуги недоступні"));
+                .orElseThrow(() -> new RuntimeException("No available workplaces for this service"));
     }
 
     // Створення талону для послуги і робочого місця

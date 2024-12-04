@@ -138,8 +138,11 @@ document.addEventListener("DOMContentLoaded", function() {
             if (queueData.length > 0) {
                 queueData.forEach(ticket => {
                     const div = document.createElement("div");
-                    div.innerText = `Талон: ${ticket.ticketNumber}, Послуга: ${ticket.
-                        serviceEntity.serviceName}, Статус: ${ticket.status}`;
+                    div.innerText = `Талон: ${ticket.ticketNumber},\ 
+                    Клієнт: ${ticket.clientName},\
+                    Час: ${new Date(ticket.createdAt).toLocaleString()},\ 
+                    Послуга: ${ticket.serviceEntity.serviceName},\
+                    Статус: ${ticket.status}`;
                     currentQueueDiv.appendChild(div);
 
                     queueSelects.forEach(select => {

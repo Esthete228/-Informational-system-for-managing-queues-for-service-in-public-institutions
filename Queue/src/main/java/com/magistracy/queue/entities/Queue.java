@@ -18,6 +18,9 @@ public class Queue {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JoinColumn(name = "client_name")
+    private String clientName; // Ім'я клієнта
+
     @ManyToOne
     @JoinColumn(name = "service_id")
     @JsonManagedReference
@@ -61,6 +64,14 @@ public class Queue {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
     }
 
     public ServiceEntity getServiceEntity() {

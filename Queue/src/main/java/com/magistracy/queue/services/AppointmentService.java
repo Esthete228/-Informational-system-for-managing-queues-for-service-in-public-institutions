@@ -25,6 +25,45 @@ public class AppointmentService {
         return appointmentRepository.findByClientId(clientId); // Передбачається, що цей метод є в репозиторії
     }
 
+    // Метод для бронювання запису
+    public Appointment bookAppointment(ServiceEntity service, Client client, LocalDateTime appointmentTime) {
+        // Перевірка, чи вибраний день є буднім
+        if (appointmentTime.getDayOfWeek() == DayOfWeek.SATURDAY || appointmentTime.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            throw new RuntimeException("Запис доступний тільки на будні дні");
+        }
+
+        // Отримуємо поточний час
+        LocalDateTime now = LocalDateTime.now();
+
+        // Перевірка, чи дата запису є сьогоднішньою
+        boolean isToday = appointmentTime.toLocalDate().equals(now.toLocalDate());
+
+        // Якщо дата сьогоднішня, перевіряємо, чи час у майбутньому
+        if (isToday && appointmentTime.isBefore(now)) {
+            throw new RuntimeException("Неможливо записатися на час, що вже пройшов");
+        }
+
+        // Якщо дата не сьогоднішня, перевіряємо, чи вона у майбутньому
+        if (!isToday && appointmentTime.isBefore(now)) {
+            throw new RuntimeException("Неможливо записатися на попередні дні");
+        }
+
+        // Перевірка, чи час не заброньований для цієї послуги
+        List<Appointment> existingAppointments = appointmentRepository.findByAppointmentTimeAndServiceEntity(appointmentTime, service);
+        if (!existingAppointments.isEmpty()) {
+            throw new RuntimeException("Цей час вже заброньований для цієї послуги");
+        }
+
+        // Створення нового запису
+        Appointment appointment = new Appointment();
+        appointment.setServiceEntity(service);
+        appointment.setClient(client);
+        appointment.setAppointmentTime(appointmentTime);
+
+        // Збереження нового запису
+        return appointmentRepository.save(appointment);
+    }
+
     // Метод для редагування запису
     public Appointment updateAppointment(Long appointmentId, Long clientId, LocalDateTime newAppointmentTime) {
         // Знаходимо запис за його ID і перевіряємо, що цей запис належить клієнту
@@ -66,31 +105,4 @@ public class AppointmentService {
         }
     }
 
-    // Метод для бронювання запису
-    public Appointment bookAppointment(ServiceEntity service, Client client, LocalDateTime appointmentTime) {
-        // Перевірка, чи вибраний день є буднім
-        if (appointmentTime.getDayOfWeek() == DayOfWeek.SATURDAY || appointmentTime.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            throw new RuntimeException("Запис доступний тільки на будні дні");
-        }
-
-        // Перевірка, чи час у майбутньому
-        if (appointmentTime.isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Неможливо записатися на попередні дні");
-        }
-
-        // Перевірка, чи час не заброньований для цієї послуги
-        List<Appointment> existingAppointments = appointmentRepository.findByAppointmentTimeAndServiceEntity(appointmentTime, service);
-        if (!existingAppointments.isEmpty()) {
-            throw new RuntimeException("Цей час вже заброньований для цієї послуги");
-        }
-
-        // Створення нового запису
-        Appointment appointment = new Appointment();
-        appointment.setServiceEntity(service);
-        appointment.setClient(client);
-        appointment.setAppointmentTime(appointmentTime);
-
-        // Збереження нового запису
-        return appointmentRepository.save(appointment);
-    }
 }

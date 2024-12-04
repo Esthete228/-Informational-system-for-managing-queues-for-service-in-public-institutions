@@ -6,9 +6,9 @@ function updateAvailableTimes(dateInputId, timeSelectId, serviceId = null, appoi
 
     if (appointmentDate) {
         const selectedDate = new Date(appointmentDate);
-        const dayOfWeek = selectedDate.getDay();
         const today = new Date();
-        const currentTime = today.getHours() * 60 + today.getMinutes(); // Поточний час у хвилинах (для порівняння)
+        today.setHours(0, 0, 0, 0); // Залишаємо тільки дату без часу
+        const currentTime = new Date();
 
         // Забороняємо вибір попередніх днів
         if (selectedDate < today) {
@@ -16,7 +16,6 @@ function updateAvailableTimes(dateInputId, timeSelectId, serviceId = null, appoi
             return;
         }
 
-        // Завантаження записів клієнта для перевірки на доступність
         fetch('/appointments/client-appointments')
             .then(response => response.json())
             .then(appointments => {
@@ -24,10 +23,10 @@ function updateAvailableTimes(dateInputId, timeSelectId, serviceId = null, appoi
                     .filter(appointment => {
                         const appointmentDate = new Date(appointment.appointmentTime);
                         return appointmentDate.toLocaleDateString() === selectedDate.toLocaleDateString() &&
-                            (appointmentId === null || appointment.id !== appointmentId) && // Перевірка, чи не це поточний запис
-                            (serviceId === null || appointment.serviceEntity.id !== serviceId); // Перевірка на іншу послугу
+                            (appointmentId === null || appointment.id !== appointmentId) &&
+                            (serviceId === null || appointment.serviceEntity.id !== serviceId);
                     })
-                    .map(appointment => new Date(appointment.appointmentTime).toLocaleTimeString('en-GB').slice(0, 5)); // Заброньовані години на цей день
+                    .map(appointment => formatTime(appointment.appointmentTime)); // Форматуємо час у потрібний формат
 
                 const availableHours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
@@ -40,7 +39,7 @@ function updateAvailableTimes(dateInputId, timeSelectId, serviceId = null, appoi
                     const selectedTimeInMinutes = hourValue * 60 + minuteValue;
 
                     // Якщо день вибраний як поточний, перевіряємо, чи не пройшов час
-                    if (selectedDate.toLocaleDateString() === today.toLocaleDateString() && selectedTimeInMinutes < currentTime) {
+                    if (selectedDate.toLocaleDateString() === today.toLocaleDateString() && selectedTimeInMinutes < (currentTime.getHours() * 60 + currentTime.getMinutes())) {
                         option.disabled = true; // Відключити години, що вже пройшли на поточний день
                     }
 
@@ -54,6 +53,12 @@ function updateAvailableTimes(dateInputId, timeSelectId, serviceId = null, appoi
             })
             .catch(error => console.error('Error loading appointments:', error));
     }
+}
+
+// Допоміжна функція для форматування часу
+function formatTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
 // Використовуємо для первинного запису
